@@ -2,8 +2,10 @@ package OpenSim::UserServer;
 
 use strict;
 use OpenSim::Config;
+use OpenSim::Utility;
 use OpenSim::UserServer::Config;
 use OpenSim::UserServer::UserManager;
+use Digest::MD5;
 
 sub getHandlerList {
     my %list = (
@@ -15,6 +17,23 @@ sub getHandlerList {
     return \%list;
 }
 
+sub Authenticate {
+    my $params = shift;
+    my $user = &OpenSim::UserServer::UserManager::getUserByName($params->{first}, $params->{last});
+    my $login_pass = $params->{passwd};
+    $login_pass =~ s/^\$1\$//;
+    if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
+	return 0;
+    }
+    if ($params->{weblogin}) {
+	# TODO: store weblogin key
+	return &OpenSim::Utility::GenerateUUID();
+    } else {
+	# TODO: verify weblogin key
+	return $user;
+    }
+}
+
 # #################
 # Handlers
 sub _login_to_simulator {
@@ -24,9 +43,9 @@ sub _login_to_simulator {
 	return &_make_false_response("not enough params", "You must have been eaten by a wolf");
     }
     # select user (check passwd)
-    my $user = &OpenSim::UserServer::UserManager::getUserByName($params->{first}, $params->{last});
-    if ($user->{passwordHash} ne $params->{passwd}) {
-	&_make_false_response("password not match", "Late! There is a wolf behind you");
+    my $user = &Authenticate($params);
+    if (!$user) {
+	return &_make_false_response("password not match", "Late! There is a wolf behind you");
     }
     
     # contact with Grid server
@@ -36,6 +55,7 @@ sub _login_to_simulator {
 	);
     my $grid_response = &OpenSim::Utility::XMLRPCCall($OpenSim::Config::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
     my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
+    my $internal_server_url = $grid_response->{internal_server_url};
     # contact with Region server
     my $session_id = &OpenSim::Utility::GenerateUUID;
     my $secure_session_id = &OpenSim::Utility::GenerateUUID;
@@ -54,14 +74,14 @@ sub _login_to_simulator {
 	regionhandle => $user->{homeRegion},
 	caps_path => $caps_id,
 	);
-    my $region_response = &OpenSim::Utility::XMLRPCCall($region_server_url, "expect_user", \%region_request_params);
+    my $region_response = &OpenSim::Utility::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
     # contact with Inventory server
     my $inventory_data = &_create_inventory_data($user->{UUID});
     # return to client
     my %response = (
 	# login info
-	login => {string => "true"},
-	session_id => {string => $session_id },
+	login => "true",
+	session_id => $session_id,
 	secure_session_id => $secure_session_id,
 	# agent
 	first_name => $user->{username},
@@ -140,10 +160,10 @@ sub _get_avatar_picker_avatar {
 sub _create_inventory_data {
     my $user_id = shift;
     my $postdata =<< "POSTDATA";
-    POSTDATA=<?xml version="1.0" encoding="utf-8"?><guid>$user_id</guid>
+<?xml version="1.0" encoding="utf-8"?><guid>$user_id</guid>
 POSTDATA
     # TODO:
-my $res = &OpenSim::Utility::HttpPostRequest($OpenSim::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
+    my $res = &OpenSim::Utility::HttpPostRequest($OpenSim::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
     my $res_obj = &OpenSim::Utility::XML2Obj($res);
     if (!$res_obj->{InventoryFolderBase}) {
 	&OpenSim::Utility::HttpPostRequest($OpenSim::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);

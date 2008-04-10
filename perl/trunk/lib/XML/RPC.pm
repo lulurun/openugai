@@ -17,15 +17,15 @@ sub new {
 
 sub receive {
     my ($this, $xmldata, $handler) = @_;
-    my $request = $this->{parser}->parse($xmldata);
-    my @args = map {$_->value} @{$request->args};
     my $response = undef;
     eval {
+	my $request = $this->{parser}->parse($xmldata);
+	my @args = map {$_->value} @{$request->args};
 	$response = $handler->($request->{name}, @args);
     };
     if ($@) {
 	my %error = (
-	    "error" => "ERROR: " . $request->{name},
+	    "error" => "ERROR",
 	    "message" => $@,
 	    );
 	$response = \%error;

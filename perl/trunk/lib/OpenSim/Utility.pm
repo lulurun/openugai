@@ -81,6 +81,7 @@ sub HttpPostRequest {
 	select(SOCK); $| = 1; select(STDOUT);
 	print SOCK "POST $path HTTP/1.0$CRLF";
 	print SOCK "Host: $host:$port$CRLF";
+	print SOCK "Content-Type: text/xml$CRLF";
 	print SOCK "Content-Length: $data_len$CRLF";
 	print SOCK "$CRLF";
 	print SOCK $postdata;
