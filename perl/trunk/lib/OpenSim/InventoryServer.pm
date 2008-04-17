@@ -240,7 +240,7 @@ sub _get_uuid {
 	if ($data =~ /<guid\s*>([^<]+)<\/guid>/) {
 		return $1;
 	} else {
-		Carp::croak("can not find uuid");
+		Carp::croak("can not find uuid [$data]");
 	}
 }
 

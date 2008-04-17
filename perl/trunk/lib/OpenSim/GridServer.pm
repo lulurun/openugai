@@ -133,8 +133,7 @@ sub _simulator_data_request {
 	$response{"region_UUID"} = $region_data->{uuid};
 	$response{"region_name"} = $region_data->{regionName};
 	$response{"regionHandle"} = $region_data->{regionHandle};
-    $response{"internal_server_url"} = $region_data->{serverURI};
-
+    $response{"internal_server_url"} = $region_data->{serverURI}; # TODO: hack !!!???
 	return \%response;
 }
 

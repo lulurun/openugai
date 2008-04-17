@@ -8,7 +8,7 @@ our %SYS_SQL = (
 	select_user_by_uuid =>
 	"select * from users where uuid=?",
 	create_user =>
-	"insert into users values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+	"insert into users values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
 );
 
 our @USERS_COLUMNS = (
@@ -34,6 +34,7 @@ our @USERS_COLUMNS = (
 	"profileFirstText",
 	"profileImage",
 	"profileFirstImage",
+        "webLoginKey",
 );
 
 our @classified_categories = (

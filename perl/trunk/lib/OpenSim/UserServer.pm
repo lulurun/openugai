@@ -50,12 +50,12 @@ sub _login_to_simulator {
     
     # contact with Grid server
     my %grid_request_params = (
-	region_handle => $user->{homeRegion},
-	authkey => undef
-	);
+			       region_handle => $user->{homeRegion},
+			       authkey => undef
+			       );
     my $grid_response = &OpenSim::Utility::XMLRPCCall($OpenSim::Config::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
     my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
-    my $internal_server_url = $grid_response->{internal_server_url};
+    my $internal_server_url = $grid_response->{internal_server_url}; # TODO: hack for regionservers behind a router
     # contact with Region server
     my $session_id = &OpenSim::Utility::GenerateUUID;
     my $secure_session_id = &OpenSim::Utility::GenerateUUID;
@@ -74,6 +74,7 @@ sub _login_to_simulator {
 	regionhandle => $user->{homeRegion},
 	caps_path => $caps_id,
 	);
+	# TODO: using $internal_server_url is atemporary solution
     my $region_response = &OpenSim::Utility::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
     # contact with Inventory server
     my $inventory_data = &_create_inventory_data($user->{UUID});
@@ -92,7 +93,7 @@ sub _login_to_simulator {
 	start_location => $params->{start},
 	sim_ip => $grid_response->{sim_ip},
 	sim_port => $grid_response->{sim_port},
-	#sim_port => 9001,
+	#sim_port => 9001, # TODO: hack for testing another region server
 	region_x => $grid_response->{region_locx} * 256,
 	region_y => $grid_response->{region_locy} * 256,
 	# other
