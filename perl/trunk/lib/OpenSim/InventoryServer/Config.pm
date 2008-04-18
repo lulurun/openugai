@@ -6,7 +6,7 @@ our %SYS_SQL = (
 	save_inventory_folder =>
 		"REPLACE INTO inventoryfolders VALUES (?,?,?,?,?,?)",
 	save_inventory_item =>
-		"REPLACE INTO inventoryitems VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+		"REPLACE INTO inventoryitems VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
 	get_root_folder =>
 		"SELECT * FROM inventoryfolders WHERE parentFolderID=? AND agentId=?",
 	get_children_folders =>
@@ -34,14 +34,13 @@ our @INVENTORYFOLDERS_COLUMNS = (
 our @INVENTORYITEMS_COLUMNS = (
 	"inventoryID",
 	"assetID",
-	"type",
+	"assetType",
 	"parentFolderID",
 	"avatarID",
 	"inventoryName",
 	"inventoryDescription",
 	"inventoryNextPermissions",
 	"inventoryCurrentPermissions",
-	"assetType",
 	"invType",
 	"creatorID",
 	"inventoryBasePermissions",

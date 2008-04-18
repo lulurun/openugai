@@ -26,10 +26,8 @@ sub Authenticate {
 	return 0;
     }
     if ($params->{weblogin}) {
-	# TODO: store weblogin key
 	return &OpenSim::Utility::GenerateUUID();
     } else {
-	# TODO: verify weblogin key
 	return $user;
     }
 }
@@ -74,7 +72,7 @@ sub _login_to_simulator {
 	regionhandle => $user->{homeRegion},
 	caps_path => $caps_id,
 	);
-	# TODO: using $internal_server_url is atemporary solution
+    # TODO: using $internal_server_url is atemporary solution
     my $region_response = &OpenSim::Utility::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
     # contact with Inventory server
     my $inventory_data = &_create_inventory_data($user->{UUID});
@@ -166,28 +164,30 @@ POSTDATA
     # TODO:
     my $res = &OpenSim::Utility::HttpPostRequest($OpenSim::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
     my $res_obj = &OpenSim::Utility::XML2Obj($res);
-    if (!$res_obj->{InventoryFolderBase}) {
-	&OpenSim::Utility::HttpPostRequest($OpenSim::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);
-	# Sleep(10000); # TODO: need not to do this
-	$res = &OpenSim::Utility::HttpPostRequest($OpenSim::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
-	$res_obj = &OpenSim::Utility::XML2Obj($res);
-    }
+
+#    if (!$res_obj->{InventoryFolderBase}) {
+#	&OpenSim::Utility::HttpPostRequest($OpenSim::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);
+#	# Sleep(10000); # TODO: need not to do this
+#	$res = &OpenSim::Utility::HttpPostRequest($OpenSim::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
+#	$res_obj = &OpenSim::Utility::XML2Obj($res);
+#   }
+
     my $folders = $res_obj->{InventoryFolderBase};
     my $folders_count = @$folders;
     if ($folders_count > 0) {
 	my @AgentInventoryFolders = ();
 	my $root_uuid = &OpenSim::Utility::ZeroUUID();
 	foreach my $folder (@$folders) {
-	    if ($folder->{parentID}->{UUID} eq &OpenSim::Utility::ZeroUUID()) {
-		$root_uuid = $folder->{folderID}->{UUID};
+	    if ($folder->{ParentID}->{UUID} eq &OpenSim::Utility::ZeroUUID()) {
+		$root_uuid = $folder->{ID}->{UUID};
 	    }
 	    my %folder_hash = (
-		name => $folder->{name},
-		parent_id => $folder->{parentID}->{UUID},
-		version => $folder->{version},
-		type_default => $folder->{type},
-		folder_id => $folder->{folderID}->{UUID},
-		);
+			       name => $folder->{Name},
+			       parent_id => $folder->{ParentID}->{UUID},
+			       version => $folder->{Version},
+			       type_default => $folder->{Type},
+			       folder_id => $folder->{ID}->{UUID},
+			       );
 	    push @AgentInventoryFolders, \%folder_hash;
 	}
 	return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };

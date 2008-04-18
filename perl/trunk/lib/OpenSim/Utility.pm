@@ -37,7 +37,7 @@ sub getSimpleResult {
 sub GenerateUUID {
 	my $ug = new Data::UUID();
 	my $uuid = $ug->create();
-	return $ug->to_string($uuid);
+	return lc($ug->to_string($uuid));
 }
 
 sub ZeroUUID {
