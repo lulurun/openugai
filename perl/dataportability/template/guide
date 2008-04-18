@@ -1,0 +1,10 @@
+
+ <ul>
+  <li>Start your Secondlife.exe with 2 options:</li>
+  <ul>
+   <li>"-loginpage http://opensim.wolfdrawer.net/user.cgi?method=login"</li>
+   <li>"-loginuri http://opensim.wolfdrawer.net/user.cgi"</li>
+  </ul>
+  <li>First: Test, Last: User, Password: test</li>
+ </ul>
+
