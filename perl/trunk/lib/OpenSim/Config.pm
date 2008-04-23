@@ -33,6 +33,7 @@ our $DBPASS = undef;
 
 our $LOGDIR = "/srv/www/opensim";
 our $TMPLDIR = "/srv/www/opensim/template";
+our $LOGINKEYDIR = "/srv/www/opensim/loginkey";
 
 1;
 

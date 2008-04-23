@@ -6,6 +6,7 @@ use OpenSim::Utility;
 use OpenSim::UserServer::Config;
 use OpenSim::UserServer::UserManager;
 use Digest::MD5;
+use Storable;
 
 sub getHandlerList {
     my %list = (
@@ -26,7 +27,9 @@ sub Authenticate {
 	return 0;
     }
     if ($params->{weblogin}) {
-	return &OpenSim::Utility::GenerateUUID();
+	my $key = &OpenSim::Utility::GenerateUUID();
+	Storable::store($user, $OpenSim::Config::LOGINKEYDIR . "/" . $key);
+	return $key;
     } else {
 	return $user;
     }
@@ -37,11 +40,20 @@ sub Authenticate {
 sub _login_to_simulator {
     my $params = shift;
     # check params
-    if (!$params->{first} || !$params->{last} || !$params->{passwd}) {
+    if (!$params->{first} || !$params->{last}) {
 	return &_make_false_response("not enough params", "You must have been eaten by a wolf");
     }
-    # select user (check passwd)
-    my $user = &Authenticate($params);
+    # get the user (check passwd or from a saved webloginkey)
+    my $user = undef;
+    if ($params->{passwd}) {
+	$user = &Authenticate($params);
+    } elsif ($params->{web_login_key}) {
+	my $key = $OpenSim::Config::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
+	$user = Storable::retrieve($key);
+	unlink($key);
+    } else {
+	return &_make_false_response("not enough params", "You must have been eaten by a wolf");    
+    }
     if (!$user) {
 	return &_make_false_response("password not match", "Late! There is a wolf behind you");
     }
