@@ -25,18 +25,24 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
 	if (!$auth_key) {
 	    &MyCGI::outputHtml("utf-8", &login_form($param, "wrong password"));
 	} else {
-	    &MyCGI::redirect(&client_login_trigger($param, $auth_key));
+	    my $redirect_url = &create_client_login_trigger($param, $auth_key); 
+	    &OpenSim::Utility::Log("user", "redirect", $redirect_url);
+	    &MyCGI::redirect($redirect_url);
 	}
     } else {
 	&MyCGI::outputHtml("utf-8", &guide);
     }
 } else { # POST method, XMLRPC
     my $postdata = $param->{'POSTDATA'};
-    &OpenSim::Utility::Log("user", "request", $postdata);
-    my $xmlrpc = new XML::RPC();
-    my $response = $xmlrpc->receive($postdata, \&XMLRPCHandler);
-    &OpenSim::Utility::Log("user", "response", Data::Dump::dump $response);
-    &MyCGI::outputXml("utf-8", $response);
+    if (!$postdata) {
+	&MyCGI::outputHtml("utf-8", "");
+    } else {
+	&OpenSim::Utility::Log("user", "request", $postdata);
+	my $xmlrpc = new XML::RPC();
+	my $response = $xmlrpc->receive($postdata, \&XMLRPCHandler);
+	&OpenSim::Utility::Log("user", "response", Data::Dump::dump $response);
+	&MyCGI::outputXml("utf-8", $response);
+    }
 }
 
 sub XMLRPCHandler {
@@ -67,11 +73,13 @@ sub login_form {
     return $login_form_tmpl;
 }
 
-sub client_login_trigger {
+sub create_client_login_trigger {
     my ($param, $auth_key) = @_;
-    my $secondlife_url = "secondlife:///app/login?first_name=" .
-	$param->{firstname} ."&last_name=" . $param->{lastname} .
-	"&location=" . $param->{location} . "&grid=Other&web_login_key=" .
+    my $location = $param->{location} || "last";
+    my $command = $param->{command} || "login";
+    my $secondlife_url = "secondlife:///app/" . $command . "?first_name=" .
+	$param->{username} ."&last_name=" . $param->{lastname} .
+	"&location=" . $location . "&grid=Other&web_login_key=" .
 	$auth_key;
     return "about:blank?redirect-http-hack=" .
 	&MyCGI::urlEncode($secondlife_url);
