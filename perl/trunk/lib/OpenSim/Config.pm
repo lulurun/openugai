@@ -22,15 +22,6 @@ our $GRID_SEND_KEY = "";
 #our $INVENTORY_SERVER_URL = "http://127.0.0.1:8004";
 our $INVENTORY_SERVER_URL = "http://opensim.wolfdrawer.net:80/inventory.cgi";
 
-our $DSN = "dbi:mysql:opensim;host=192.168.0.100;";
-our $DBUSER = "lulu";
-our $DBPASS = undef;
-
-#our $DSN = "dbi:mysql:database=jinsei;host=10.8.1.164;";
-#our $DBUSER = "jinsei";
-#our $DBPASS = "jinsei";
-
-
 our $LOGDIR = "/srv/www/opensim";
 our $TMPLDIR = "/srv/www/opensim/template";
 our $LOGINKEYDIR = "/srv/www/opensim/loginkey";

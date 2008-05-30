@@ -6,7 +6,7 @@ our %SYS_SQL = (
 	save_inventory_folder =>
 		"REPLACE INTO inventoryfolders VALUES (?,?,?,?,?,?)",
 	save_inventory_item =>
-		"REPLACE INTO inventoryitems VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+		"REPLACE INTO inventoryitems VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
 	get_root_folder =>
 		"SELECT * FROM inventoryfolders WHERE parentFolderID=? AND agentId=?",
 	get_children_folders =>
@@ -23,28 +23,34 @@ our %SYS_SQL = (
 
 
 our @INVENTORYFOLDERS_COLUMNS = (
-	"folderID",
-	"agentID",
-	"parentFolderID",
-	"folderName",
-	"type",
-	"version",
-);
+				 "folderID",
+				 "agentID",
+				 "parentFolderID",
+				 "folderName",
+				 "type",
+				 "version",
+				 );
 
 our @INVENTORYITEMS_COLUMNS = (
-	"inventoryID",
-	"assetID",
-	"assetType",
-	"parentFolderID",
-	"avatarID",
-	"inventoryName",
-	"inventoryDescription",
-	"inventoryNextPermissions",
-	"inventoryCurrentPermissions",
-	"invType",
-	"creatorID",
-	"inventoryBasePermissions",
-	"inventoryEveryOnePermissions",
+			       "inventoryID",
+			       "assetID",
+			       "assetType",
+			       "parentFolderID",
+			       "avatarID",
+			       "inventoryName",
+			       "inventoryDescription",
+			       "inventoryNextPermissions",
+			       "inventoryCurrentPermissions",
+			       "invType",
+			       "creatorID",
+			       "inventoryBasePermissions",
+			       "inventoryEveryOnePermissions",
+			       "salePrice",
+			       "saleType",
+			       "creationDate",
+			       "groupID",
+			       "groupOwned",
+			       "flags",
 );
 
 1;

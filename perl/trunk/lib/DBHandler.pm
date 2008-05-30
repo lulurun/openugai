@@ -46,7 +46,7 @@ sub exec {
 		Carp::croak( $dbh->errstr );
 	}
 	my @ret = ();
-	if ( $sql =~ /^select/i ) {
+	if ( $sql =~ /^select|show|desc/i ) {
 		# @@@ get result object
 		while ( my $res = $sth->fetchrow_hashref() ) {
 			push @ret, $res;

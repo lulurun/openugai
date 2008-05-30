@@ -4,7 +4,6 @@ use strict;
 use XML::RPC;
 use XML::Simple;
 use Data::UUID;
-use DBHandler;
 use OpenSim::Config;
 use Socket;
 
@@ -25,13 +24,6 @@ sub XMLRPCCall_array {
 sub UIntsToLong {
 	my ($int1, $int2) = @_;
 	return $int1 * 4294967296 + $int2;
-}
-
-sub getSimpleResult {
-	my ($sql, @args) = @_;
-	my $dbh = &DBHandler::getConnection($OpenSim::Config::DSN, $OpenSim::Config::DBUSER, $OpenSim::Config::DBPASS);
-	my $st = new Statement($dbh, $sql);
-	return $st->exec(@args);
 }
 
 sub GenerateUUID {
