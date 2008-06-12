@@ -4,7 +4,7 @@ use strict;
 
 our %SYS_SQL = (
 	select_user_by_name =>
-	"select * from users where username=? and lastname=?",
+	"select * from users where lcase(username)=? and lcase(lastname)=?",
 	select_user_by_uuid =>
 	"select * from users where uuid=?",
 	create_user =>
@@ -34,7 +34,7 @@ our @USERS_COLUMNS = (
 	"profileFirstText",
 	"profileImage",
 	"profileFirstImage",
-        "webLoginKey",
+	"webLoginKey",
 );
 
 our @classified_categories = (

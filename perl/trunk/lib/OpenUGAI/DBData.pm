@@ -2,7 +2,7 @@ package OpenUGAI::DBData;
 
 use DBHandler;
 
-our $DSN = "dbi:mysql:appearance;host=localhost;";
+our $DSN = "dbi:mysql:openasset3;host=192.168.50.3;";
 our $DBUSER = "liu";
 our $DBPASS = undef;
 

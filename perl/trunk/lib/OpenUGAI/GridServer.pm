@@ -5,56 +5,64 @@ use OpenUGAI::Utility;
 use OpenUGAI::GridServer::Config;
 use OpenUGAI::GridServer::GridManager;
 
-my $METHOD_LIST = undef;
-
 sub getHandlerList {
-	if (!$METHOD_LIST) {
-		my %list = (
-			"simulator_login" => \&_simulator_login,
-			"simulator_data_request" => \&_simulator_data_request,
-			"map_block" => \&_map_block,
-			"map_block2" => \&_map_block2,
-		);
-		$METHOD_LIST = \%list;
-	}
-    return $METHOD_LIST;
+	my %list = (
+		"simulator_login" => \&_simulator_login,
+		"simulator_data_request" => \&_simulator_data_request,
+		"simulator_after_region_moved" => \&_simulator_after_region_moved,
+		"map_block" => \&_map_block,
+		"map_block2" => \&_map_block2,
+	);
+    return \%list;
 }
 
 # #################
 # XMLRPC Handlers
-sub _simulator_login {
+sub _simulator_after_region_moved {
 	my $params = shift;
-
-	my $region_data = undef;
 	my %response = ();
-	if ($params->{"region_handle"}) {
-		$region_data = &OpenUGAI::GridServer::GridManager::getRegionByHandle($params->{"region_handle"});
+
+	my $region_uuid = "";
+	if ($params->{UUID}) {
+		$region_uuid = $params->{UUID};		
 	} else {
-		$response{"error"} = "No region_handle passed to grid server - unable to connect you";
+		$response{"error"} = "No region_uuid passed to grid server";
 		return \%response;
 	}
+	
+	eval {
+		&OpenUGAI::GridServer::GridManager::deleteRegionByUUID($region_uuid);
+	};
+	if ($@) {
+		$response{"status"} = "Deleting region failed: $region_uuid";
+	} else {
+		$response{"status"} = "Deleting region successful: $region_uuid";
+	}
+	return \%response;
+}
 
-	if (!$region_data) {
-		eval {
-			&ValidateNewRegionKeys($params);
-		};
-		if ($@) {
-			# TODO @@@
-		}
-		my %new_region_data = (
-			uuid => undef,
-			regionHandle => OpenUGAI::Utility::UIntsToLong($params->{region_locx}*256, $params->{region_locx}*256),
+sub _simulator_login {
+	my $params = shift;
+	my %response = ();
+
+	my $region_data = undef;
+	my %new_region_data = ();
+	if ($params->{"region_locx"} && $params->{"region_locy"}) {
+		my $region_handle = &getRegionHandle($params->{"region_locx"}, $params->{"region_locy"});
+		%new_region_data = (
+			uuid => $params->{UUID},
+			regionHandle => $region_handle,
 			regionName => $params->{sim_name},
-			regionRecvKey => $OpenUGAI::Config::SIM_RECV_KEY,
-			regionSendKey => $OpenUGAI::Config::SIM_SEND_KEY,
-			regionSecret => $OpenUGAI::Config::SIM_RECV_KEY,
+			regionRecvKey => $params->{recvkey},
+			regionSendKey => $params->{authkey},
+			regionSecret => $params->{region_secret},
 			regionDataURI => "",
 			serverIP => $params->{sim_ip},
 			serverPort => $params->{sim_port},
-			serverURI => "http://" + $params->{sim_ip} + ":" + $params->{sim_port} + "/",
-			LocX => $params->{region_locx},
-			LocY => $params->{region_locy},
-			LocZ => 0,
+			serverURI => "http://" . $params->{sim_ip} . ":" . $params->{sim_port} . "/",
+			locX => $params->{region_locx},
+			locY => $params->{region_locy},
+			locZ => 0,
 			eastOverrideHandle => undef,
 			westOverrideHandle => undef,
 			southOverrideHandle => undef,
@@ -68,26 +76,49 @@ sub _simulator_login {
 			regionMapTexture => $params->{"map-image-id"},
 			serverHttpPort => $params->{http_port},
 			serverRemotingPort => $params->{remoting_port},
-			owner_uuid => $params->{owner_uuid}, # TODO @@@ not confirmed
-			originUUID => undef,
+			owner_uuid => $params->{master_avatar_uuid},
+			originUUID => $params->{UUID},
 		);
+		$region_data = &OpenUGAI::GridServer::GridManager::getRegionByHandle($region_handle);
+	} else {
+		$response{"error"} = "No region_handle passed to grid server - unable to connect you";
+		return \%response;
+	}
+
+	if (!$region_data) {
 		eval {
+			&ValidateNewRegionKeys($params);
+			&ValidateRegionContactable($params);
 			&OpenUGAI::GridServer::GridManager::addRegion(\%new_region_data);
 		};
 		if ($@) {
-			$response{"error"} = "unable to add region";
+			$response{"error"} = "unable to add region: $@";
 			return \%response;
 		}
 		$region_data = \%new_region_data;
 	} else {
 		eval {
 			&ValidateOverwriteKeys($params);
+			&ValidateRegionContactable($params);
+			$new_region_data{regionDataURI} = $region_data->{regionDataURI};
+			$new_region_data{locZ} = $region_data->{locZ};
+			$new_region_data{eastOverrideHandle} = $region_data->{eastOverrideHandle};
+			$new_region_data{westOverrideHandle} = $region_data->{westOverrideHandle};
+			$new_region_data{southOverrideHandle} = $region_data->{southOverrideHandle};
+			$new_region_data{northOverrideHandle} = $region_data->{northOverrideHandle};
+			$new_region_data{regionAssetURI} = $region_data->{regionAssetURI};
+			$new_region_data{regionAssetRecvKey} = $region_data->{regionAssetRecvKey};
+			$new_region_data{regionAssetSendKey} = $region_data->{regionAssetSendKey};
+			$new_region_data{regionUserURI} = $region_data->{regionUserURI};
+			$new_region_data{regionUserRecvKey} = $region_data->{regionUserRecvKey};
+			$new_region_data{regionUserSendKey} = $region_data->{regionUserSendKey};
+			&OpenUGAI::GridServer::GridManager::updateRegionByHandle(\%new_region_data);
 		};
 		if ($@) {
-			# TODO @@@
+			$response{"error"} = "unable to add region: $@";
+			return \%response;
 		}
  	}
-	&ValidateRegionContactable($region_data);
 
 	my @region_neighbours_data = ();
 	my $region_list = &OpenUGAI::GridServer::GridManager::getRegionList($region_data->{locX}-1, $region_data->{locY}-1, $region_data->{locX}+1, $region_data->{locY}+1);
@@ -123,6 +154,7 @@ sub _simulator_login {
 		data_uri => $region_data->{regionDataURI},
 		"allow_forceful_banlines" => "TRUE",
 	);
+	# TODO @@@ message servers ...
 
 	return \%response;
 }
@@ -225,6 +257,40 @@ sub _map_block2 {
 		"sim-profiles" => \@sim_block_list,
 	);
 	return \%response;
+}
+
+# ############
+# subs used by public methods
+sub getRegionHandle {
+	my ($x, $y) = @_;
+	return &OpenUGAI::Utility::UIntsToLong(256*$x, 256*$y);
+}
+
+sub ValidateNewRegionKeys {
+	my $params = shift;
+	if ($params->{recvkey} ne $OpenUGAI::Config::SIM_RECV_KEY || $params->{authkey} ne $OpenUGAI::Config::SIM_SEND_KEY) {
+		Carp::croak("Authentication failed when trying to login existing region $params->{sim_name}");
+	}
+}
+
+sub ValidateOverwriteKeys {
+	my ($region_data, $params) = @_;
+	if ($params->{recvkey} ne $region_data->{regionRecvKey} || $params->{authkey} ne $region_data->{regionSendKey}) {
+		Carp::croak("Authentication failed when trying to login existing region $region_data->{regionName}");
+	}
+}
+
+sub ValidateRegionContactable {
+	my $params = shift;
+	my $region_status_url = "http://" . $params->{sim_ip} . ":" . $params->{http_port} . "/simstatus/";
+	my $response = &OpenUGAI::Utility::HttpRequest("GET", $region_status_url);
+	&OpenUGAI::Utility::Log("grid", "test", Data::Dump::dump($response));
+	if ($response->code != 200) {
+		Carp::croak($response->message);
+	}
+	if ($response->content ne "OK") {
+		Carp::croak("region server not ready");
+	}
 }
 
 1;

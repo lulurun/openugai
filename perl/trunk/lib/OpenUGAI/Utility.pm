@@ -6,6 +6,15 @@ use XML::Simple;
 use Data::UUID;
 use OpenUGAI::Config;
 use Socket;
+use Math::BigInt;
+use LWP::UserAgent;
+
+sub HttpRequest {
+	my ($method, $url, $header, $data) = @_;
+	my $ua = LWP::UserAgent->new;
+	my $request = HTTP::Request->new($method, $url, $header, $data);
+	return $ua->request($request, undef);
+}
 
 sub XMLRPCCall {
     my ($url, $methodname, $param) = @_;
@@ -22,8 +31,8 @@ sub XMLRPCCall_array {
 }
 
 sub UIntsToLong {
-	my ($int1, $int2) = @_;
-	return $int1 * 4294967296 + $int2;
+	my ($high, $low) = @_;
+	return Math::BigInt->new($high)->blsft(32)->bxor($low);
 }
 
 sub GenerateUUID {

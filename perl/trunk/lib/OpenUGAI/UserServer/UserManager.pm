@@ -7,7 +7,7 @@ use OpenUGAI::UserServer::Config;
 
 sub getUserByName {
     my ($first, $last) = @_;
-    my $res = &OpenUGAI::DBData::getSimpleResult($OpenUGAI::UserServer::Config::SYS_SQL{select_user_by_name}, $first, $last);
+    my $res = &OpenUGAI::DBData::getSimpleResult($OpenUGAI::UserServer::Config::SYS_SQL{select_user_by_name}, lc($first), lc($last) );
     my $count = @$res;
     my %user = ();
     if ($count == 1) {

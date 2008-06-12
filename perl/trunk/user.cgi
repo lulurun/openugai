@@ -4,9 +4,9 @@ use strict;
 use Carp;
 use XML::RPC;
 use MyCGI;
-use OpenSim::Utility;
-use OpenSim::Template;
-use OpenSim::UserServer;
+use OpenUGAI::Utility;
+use OpenUGAI::Template;
+use OpenUGAI::UserServer;
 use Data::Dump;
 
 my $param = &MyCGI::getParam();
@@ -21,12 +21,12 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
 	    passwd => $param->{password},
 	    weblogin => $param->{weblogin},
 	    );
-	my $auth_key = &OpenSim::UserServer::Authenticate(\%auth_param);
+	my $auth_key = &OpenUGAI::UserServer::Authenticate(\%auth_param);
 	if (!$auth_key) {
 	    &MyCGI::outputHtml("utf-8", &login_form($param, "wrong password"));
 	} else {
 	    my $redirect_url = &create_client_login_trigger($param, $auth_key); 
-	    &OpenSim::Utility::Log("user", "redirect", $redirect_url);
+	    &OpenUGAI::Utility::Log("user", "redirect", $redirect_url);
 	    &MyCGI::redirect($redirect_url);
 	}
     } else {
@@ -37,17 +37,17 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
     if (!$postdata) {
 	&MyCGI::outputHtml("utf-8", "");
     } else {
-	&OpenSim::Utility::Log("user", "request", $postdata);
+	&OpenUGAI::Utility::Log("user", "request", $postdata);
 	my $xmlrpc = new XML::RPC();
 	my $response = $xmlrpc->receive($postdata, \&XMLRPCHandler);
-	&OpenSim::Utility::Log("user", "response", Data::Dump::dump $response);
+	&OpenUGAI::Utility::Log("user", "response", Data::Dump::dump $response);
 	&MyCGI::outputXml("utf-8", $response);
     }
 }
 
 sub XMLRPCHandler {
     my ($methodname, @param) = @_;
-    my $handler_list = &OpenSim::UserServer::getHandlerList();
+    my $handler_list = &OpenUGAI::UserServer::getHandlerList();
     if (!$handler_list->{$methodname}) {
 		Carp::croak("?");
     } else {
@@ -58,7 +58,7 @@ sub XMLRPCHandler {
 
 sub login_form {
     my ($param, $msg) = @_;
-    my $login_form_tmpl = &OpenSim::Template::Get("login_form");
+    my $login_form_tmpl = &OpenUGAI::Template::Get("login_form");
     $login_form_tmpl =~ s/\[\$errors\]/$msg/;
     $login_form_tmpl =~ s/\[\$firstname\]/$param->{username}/;
     $login_form_tmpl =~ s/\[\$lastname\]/$param->{lastname}/;
@@ -86,5 +86,5 @@ sub create_client_login_trigger {
 }
 
 sub guide {
-    return &OpenSim::Template::Get("guide");
+    return &OpenUGAI::Template::Get("guide");
 }
