@@ -10,16 +10,25 @@ use Math::BigInt;
 use LWP::UserAgent;
 
 sub HttpRequest {
-	my ($method, $url, $header, $data) = @_;
+	my ($method, $url, $data) = @_;
 	my $ua = LWP::UserAgent->new;
-	my $request = HTTP::Request->new($method, $url, $header, $data);
-	return $ua->request($request, undef);
+	my $request = new HTTP::Request($method => $url);
+	if ($data) {
+		$request->content_type("text/xml");
+		$request->content($data);
+	}
+	my $res = $ua->request($request);
+	if (! $res->is_success) {
+		Carp::croak("HttpRequest failed: " . $res->code . " " . $res->message);
+	}
+	return $res->content;
 }
 
 sub XMLRPCCall {
     my ($url, $methodname, $param) = @_;
     my $xmlrpc = new XML::RPC($url);
     my $result = $xmlrpc->call($methodname, $param);
+	OpenUGAI::Utility::Log("grid", "grid_response2", Data::Dump::dump($result ));
     return $result;
 }
 

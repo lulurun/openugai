@@ -3,8 +3,8 @@
 use strict;
 use Carp;
 use MyCGI;
-use OpenSim::Utility;
-use OpenSim::AssetServer;
+use OpenUGAI::Utility;
+use OpenUGAI::AssetServer;
 
 # !!
 # TODO: ERROR code
@@ -13,23 +13,23 @@ my $param = &MyCGI::getParam();
 my $response = "<ERROR />";
 if ($ENV{REQUEST_METHOD} eq "POST") {
 	my $request = $param->{'POSTDATA'};
-	&OpenSim::Utility::Log("asset", "request", $ENV{REQUEST_URI}, $request);
-	$response = &OpenSim::AssetServer::saveAsset($request);
+	&OpenUGAI::Utility::Log("asset", "request", $ENV{REQUEST_URI}, $request);
+	$response = &OpenUGAI::AssetServer::saveAsset($request);
 } else { # get
 	eval {
 		my $rest_param = &getRestParam();
-		&OpenSim::Utility::Log("asset", "request", $ENV{REQUEST_URI});
+		&OpenUGAI::Utility::Log("asset", "request", $ENV{REQUEST_URI});
 		my $rest_param_count = @$rest_param;
 		if ($rest_param_count < 2) {
 			Carp::croak("You must have been eaten by a wolf.");
 		}
-		$response = &OpenSim::AssetServer::getAsset($rest_param->[$#$rest_param], $param);
+		$response = &OpenUGAI::AssetServer::getAsset($rest_param->[$#$rest_param], $param);
 	};
 	if ($@) {
 		$response = "<ERROR>$@</ERROR>"; # TODO: better return message needed.
 	}
 }
-&OpenSim::Utility::Log("asset", "response", $response);
+&OpenUGAI::Utility::Log("asset", "response", $response);
 &MyCGI::outputXml("utf-8", $response);
 
 sub getRestParam {

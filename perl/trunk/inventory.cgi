@@ -2,7 +2,7 @@
 
 use strict;
 use MyCGI;
-use OpenSim::InventoryServer;
+use OpenUGAI::InventoryServer;
 use Carp;
 
 my $request_uri = $ENV{REQUEST_URI} || Carp::croak("You must have been eaten by a wolf.");
@@ -14,7 +14,7 @@ if ($request_uri =~ /([^\/]+)\/$/) {
 }
 my $param = &MyCGI::getParam();
 my $post_data = $param->{'POSTDATA'};
-&OpenSim::Utility::Log("inventory", "request", $request_uri, $post_data);
+&OpenUGAI::Utility::Log("inventory", "request", $request_uri, $post_data);
 my $response = "";
 eval {
     $response = &handleRequest($request_method, $post_data);
@@ -22,12 +22,12 @@ eval {
 if ($@) {
     $response = "<ERROR>$@</ERROR>";
 }
-&OpenSim::Utility::Log("inventory", "response", $response);
+&OpenUGAI::Utility::Log("inventory", "response", $response);
 &MyCGI::outputXml("utf-8", $response);
 
 sub handleRequest {
     my ($methodname, $post_data) = @_;
-    my $handler_list = &OpenSim::InventoryServer::getHandlerList();
+    my $handler_list = &OpenUGAI::InventoryServer::getHandlerList();
     if (!$handler_list->{$methodname}) {
 	Carp::croak("?");
     } else {

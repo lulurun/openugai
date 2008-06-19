@@ -283,13 +283,15 @@ sub ValidateOverwriteKeys {
 sub ValidateRegionContactable {
 	my $params = shift;
 	my $region_status_url = "http://" . $params->{sim_ip} . ":" . $params->{http_port} . "/simstatus/";
-	my $response = &OpenUGAI::Utility::HttpRequest("GET", $region_status_url);
-	&OpenUGAI::Utility::Log("grid", "test", Data::Dump::dump($response));
-	if ($response->code != 200) {
-		Carp::croak($response->message);
+	my $res_contents = undef;
+	eval {
+		$res_contents = &OpenUGAI::Utility::HttpRequest("GET", $region_status_url);
+	};
+	if ($@) {
+		Carp::croak($@);
 	}
-	if ($response->content ne "OK") {
-		Carp::croak("region server not ready");
+	if ($res_contents ne "OK") {
+		Carp::croak("region server not ready: $res_contents");
 	}
 }
 

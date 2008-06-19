@@ -9,6 +9,8 @@ our %SYS_SQL = (
 	"select * from users where uuid=?",
 	create_user =>
 	"insert into users values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+	get_avatar_appearance =>
+	"select * from avatarappearance where Owner=?",
 );
 
 our @USERS_COLUMNS = (

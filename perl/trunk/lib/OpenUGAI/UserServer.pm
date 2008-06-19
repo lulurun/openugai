@@ -14,6 +14,7 @@ sub getHandlerList {
 		"get_user_by_name" => \&_get_user_by_name,
 		"get_user_by_uuid" => \&_get_user_by_uuid,
 		"get_avatar_picker_avatar" => \&_get_avatar_picker_avatar,
+		"get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to inventory service or implemented in the hell.
 		);
     return \%list;
 }
@@ -24,46 +25,67 @@ sub Authenticate {
     my $login_pass = $params->{passwd};
     $login_pass =~ s/^\$1\$//;
     if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
-	return 0;
+		return 0;
     }
     if ($params->{weblogin}) {
-	my $key = &OpenUGAI::Utility::GenerateUUID();
-	Storable::store($user, $OpenUGAI::Config::LOGINKEYDIR . "/" . $key);
-	return $key;
+		my $key = &OpenUGAI::Utility::GenerateUUID();
+		Storable::store($user, $OpenUGAI::Config::LOGINKEYDIR . "/" . $key);
+		return $key;
     } else {
-	return $user;
+		return $user;
     }
 }
 
 # #################
 # Handlers
+sub _get_avatar_appearance {
+	my $params = shift;
+	if (!$params->{owner}) {
+		return &_make_false_response("not enough params", "You must have been eaten by a wolf - onwer needed");
+	}
+	my $owner = $params->{owner};
+	my $appearance = undef;
+	eval {
+		$appearance = &OpenUGAI::UserServer::UserManager::getAvatarAppearance();
+	};
+	if ($@) {
+		return &_make_false_response("can not get appearance", $@);
+	}
+	return $appearance;
+}
+
+
 sub _login_to_simulator {
-    my $params = shift;
-    # check params
-    if (!$params->{first} || !$params->{last}) {
-	return &_make_false_response("not enough params", "You must have been eaten by a wolf");
-    }
-    # get the user (check passwd or from a saved webloginkey)
-    my $user = undef;
+	my $params = shift;
+	# check params
+	if (!$params->{first} || !$params->{last}) {
+		return &_make_false_response("not enough params", "You must have been eaten by a wolf");
+	}
+	# get the user (check passwd or from a saved webloginkey)
+	my $user = undef;
     if ($params->{passwd}) {
-	$user = &Authenticate($params);
-    } elsif ($params->{web_login_key}) {
-	my $key = $OpenUGAI::Config::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
-	$user = Storable::retrieve($key);
-	unlink($key);
-    } else {
-	return &_make_false_response("not enough params", "You must have been eaten by a wolf");    
-    }
-    if (!$user) {
-	return &_make_false_response("password not match", "Late! There is a wolf behind you");
-    }
-    
-    # contact with Grid server
-    my %grid_request_params = (
-			       region_handle => $user->{homeRegion},
-			       authkey => undef
-			       );
+		$user = &Authenticate($params);
+	} elsif ($params->{web_login_key}) {
+		my $key = $OpenUGAI::Config::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
+		$user = Storable::retrieve($key);
+		unlink($key);
+	} else {
+		return &_make_false_response("not enough params", "You must have been eaten by a wolf");    
+	}
+	if (!$user) {
+		return &_make_false_response("password not match", "Late! There is a wolf behind you");
+	}
+
+	# contact with Grid server
+	my %grid_request_params = (
+		region_handle => $user->{homeRegion},
+		authkey => undef
+	);
     my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Config::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
+	OpenUGAI::Utility::Log("grid", "grid_response1", Data::Dump::dump($grid_response));
+	if (!$grid_response || $grid_response->{error}) {
+		return &_make_false_response("can not login", "requested region server is not alive -" . $grid_response->{error} . "-");
+	}
     my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
     my $internal_server_url = $grid_response->{internal_server_url}; # TODO: hack for regionservers behind a router
     # contact with Region server
@@ -84,9 +106,16 @@ sub _login_to_simulator {
 	regionhandle => $user->{homeRegion},
 	caps_path => $caps_id,
 	);
-    # TODO: using $internal_server_url is atemporary solution
-    my $region_response = &OpenUGAI::Utility::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
-    # contact with Inventory server
+    # TODO: using $internal_server_url is a temporary solution
+    my $region_response = undef;
+	eval {
+    	$region_response = &OpenUGAI::Utility::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
+	};
+	if ($@) {
+		return &_make_false_response("can not login", "failed to call expect_user: $@");
+	}
+
+	# contact with Inventory server
     my $inventory_data = &_create_inventory_data($user->{UUID});
     # return to client
     my %response = (
@@ -174,8 +203,15 @@ sub _create_inventory_data {
 <?xml version="1.0" encoding="utf-8"?><guid>$user_id</guid>
 POSTDATA
     # TODO:
-    my $res = &OpenUGAI::Utility::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
+	my $res = undef;
+    eval {
+    	$res = &OpenUGAI::Utility::HttpRequest("POST", $OpenUGAI::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
+    };
+    if ($@) {
+    	Carp::croak($@);
+    }
     my $res_obj = &OpenUGAI::Utility::XML2Obj($res);
+	OpenUGAI::Utility::Log("test", "root_folders", Data::Dump::dump($res_obj));
 
 #    if (!$res_obj->{InventoryFolderBase}) {
 #	&OpenUGAI::Utility::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);
@@ -187,24 +223,24 @@ POSTDATA
     my $folders = $res_obj->{InventoryFolderBase};
     my $folders_count = @$folders;
     if ($folders_count > 0) {
-	my @AgentInventoryFolders = ();
-	my $root_uuid = &OpenUGAI::Utility::ZeroUUID();
-	foreach my $folder (@$folders) {
-	    if ($folder->{ParentID}->{UUID} eq &OpenUGAI::Utility::ZeroUUID()) {
-		$root_uuid = $folder->{ID}->{UUID};
-	    }
-	    my %folder_hash = (
-			       name => $folder->{Name},
-			       parent_id => $folder->{ParentID}->{UUID},
-			       version => $folder->{Version},
-			       type_default => $folder->{Type},
-			       folder_id => $folder->{ID}->{UUID},
-			       );
-	    push @AgentInventoryFolders, \%folder_hash;
-	}
-	return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };
+		my @AgentInventoryFolders = ();
+		my $root_uuid = &OpenUGAI::Utility::ZeroUUID();
+		foreach my $folder (@$folders) {
+		    if ($folder->{ParentID}->{UUID} eq &OpenUGAI::Utility::ZeroUUID()) {
+				$root_uuid = $folder->{ID}->{UUID};
+		    }
+		    my %folder_hash = (
+				       name => $folder->{Name},
+				       parent_id => $folder->{ParentID}->{UUID},
+				       version => $folder->{Version},
+				       type_default => $folder->{Type},
+				       folder_id => $folder->{ID}->{UUID},
+				       );
+		    push @AgentInventoryFolders, \%folder_hash;
+		}
+		return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };
     } else {
-	# TODO: impossible ???
+		# TODO: impossible ???
     }
     return undef;
 }
