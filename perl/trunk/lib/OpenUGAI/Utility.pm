@@ -28,7 +28,6 @@ sub XMLRPCCall {
     my ($url, $methodname, $param) = @_;
     my $xmlrpc = new XML::RPC($url);
     my $result = $xmlrpc->call($methodname, $param);
-	OpenUGAI::Utility::Log("grid", "grid_response2", Data::Dump::dump($result ));
     return $result;
 }
 

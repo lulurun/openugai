@@ -11,14 +11,18 @@ use Storable;
 sub getHandlerList {
     my %list = (
 		"login_to_simulator" => \&_login_to_simulator,
+		"logout_of_simulator" => \&_logout_of_simulator,
 		"get_user_by_name" => \&_get_user_by_name,
 		"get_user_by_uuid" => \&_get_user_by_uuid,
 		"get_avatar_picker_avatar" => \&_get_avatar_picker_avatar,
 		"get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to inventory service or implemented in the hell.
-		);
+		"update_user_current_region" => \&_update_user_current_region,
+	);
     return \%list;
 }
 
+# ##################
+#
 sub Authenticate {
     my $params = shift;
     my $user = &OpenUGAI::UserServer::UserManager::getUserByName($params->{first}, $params->{last});
@@ -36,8 +40,52 @@ sub Authenticate {
     }
 }
 
+sub LogOffUser {
+	my ($avatar_id, $region_id, $region_handle, $posx, $posy, $posz) = @_;
+	
+}
+
 # #################
 # Handlers
+sub _logout_of_simulator {
+	my $params = shift;
+	# TODO @@@ inform message server
+	if ($params->{avatar_uuid} && $params->{region_uuid} && $params->{region_handle}) {
+		my $posx = $params->{region_pos_x} || 128;
+		my $posy = $params->{region_pos_y} || 128;
+		my $posz = $params->{region_pos_z} || 128;
+		&LogoffUser($params->{avatar_uuid}, $params->{region_uuid}, $params->{region_handle}, $posx, $posy, $posz);
+	} else {
+	    return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
+	}
+}
+
+sub _update_user_current_region {
+	my $params = shift;
+
+	my $returnString = "FALSE";
+	if ($params->{avatar_uuid}) {
+		my $profile = &OpenUGAI::UserServer::UserManager::getUserProfile($params->{avatar_uuid});
+		if ($profile->{CurrentAgent}) {
+			$profile->{CurrentAgent}->{Region} = $params->{region_uuid} || &OpenUGAI::Utility::ZeroUUID();
+			$profile->{CurrentAgent}->{Handle} = $params->{region_handle} || "1099511628032000"; # TODO @@@ use a default variable
+		} else {
+			; # TODO @@@ ???
+		}
+		&OpenUGAI::UserServer::UserManager::commitUserAgent($profile);
+	} else {
+		; # TODO @@@ just follow what opensim dose, but not good.
+	}
+	my %response = (
+		returnString => $returnString,
+	);
+	return \%response;
+}
+
+sub _commit_agent{
+	my $profile = shift;
+}
+
 sub _get_avatar_appearance {
 	my $params = shift;
 	if (!$params->{owner}) {
@@ -81,8 +129,9 @@ sub _login_to_simulator {
 		region_handle => $user->{homeRegion},
 		authkey => undef
 	);
+	OpenUGAI::Utility::Log("user", "grid_server_url", $OpenUGAI::Config::GRID_SERVER_URL);
     my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Config::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
-	OpenUGAI::Utility::Log("grid", "grid_response1", Data::Dump::dump($grid_response));
+	OpenUGAI::Utility::Log("user", "grid_response1", Data::Dump::dump($grid_response));
 	if (!$grid_response || $grid_response->{error}) {
 		return &_make_false_response("can not login", "requested region server is not alive -" . $grid_response->{error} . "-");
 	}
