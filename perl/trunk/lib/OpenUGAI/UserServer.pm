@@ -5,6 +5,7 @@ use OpenUGAI::Config;
 use OpenUGAI::Utility;
 use OpenUGAI::UserServer::Config;
 use OpenUGAI::UserServer::UserManager;
+use OpenUGAI::Data::Avatar;
 use Digest::MD5;
 use Storable;
 
@@ -87,21 +88,20 @@ sub _commit_agent{
 }
 
 sub _get_avatar_appearance {
-	my $params = shift;
-	if (!$params->{owner}) {
-		return &_make_false_response("not enough params", "You must have been eaten by a wolf - onwer needed");
-	}
-	my $owner = $params->{owner};
-	my $appearance = undef;
-	eval {
-		$appearance = &OpenUGAI::UserServer::UserManager::getAvatarAppearance();
-	};
-	if ($@) {
-		return &_make_false_response("can not get appearance", $@);
-	}
-	return $appearance;
+    my $params = shift;
+    if (!$params->{owner}) {
+	return &_make_false_response("not enough params", "You must have been eaten by a wolf - onwer needed");
+    }
+    my $owner = $params->{owner};
+    my $appearance = undef;
+    eval {
+	$appearance = &OpenUGAI::Data::Avatar::SelectAppearance($owner);
+    };
+    if ($@) {
+	return &_make_false_response("can not get appearance", $@);
+    }
+    return $appearance;
 }
-
 
 sub _login_to_simulator {
 	my $params = shift;

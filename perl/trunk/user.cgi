@@ -2,10 +2,10 @@
 
 use strict;
 use Carp;
-use XML::RPC;
+#use XML::RPC;
 use MyCGI;
+use Template;
 use OpenUGAI::Utility;
-use OpenUGAI::Template;
 use OpenUGAI::UserServer;
 use Data::Dump;
 
@@ -49,16 +49,16 @@ sub XMLRPCHandler {
     my ($methodname, @param) = @_;
     my $handler_list = &OpenUGAI::UserServer::getHandlerList();
     if (!$handler_list->{$methodname}) {
-		Carp::croak("?");
+	Carp::croak("?");
     } else {
-		my $handler = $handler_list->{$methodname};
-		$handler->(@param);
+	my $handler = $handler_list->{$methodname};
+	$handler->(@param);
     }
 }
 
 sub login_form {
     my ($param, $msg) = @_;
-    my $login_form_tmpl = &OpenUGAI::Template::Get("login_form");
+    my $login_form_tmpl = &Template::Get("login_form");
     $login_form_tmpl =~ s/\[\$errors\]/$msg/;
     $login_form_tmpl =~ s/\[\$firstname\]/$param->{username}/;
     $login_form_tmpl =~ s/\[\$lastname\]/$param->{lastname}/;
@@ -86,5 +86,6 @@ sub create_client_login_trigger {
 }
 
 sub guide {
-    return &OpenUGAI::Template::Get("guide");
+    return &Template::Get("guide");
 }
+

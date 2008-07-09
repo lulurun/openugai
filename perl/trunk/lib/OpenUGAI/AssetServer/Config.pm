@@ -4,21 +4,20 @@ use strict;
 
 our %SYS_SQL = (
 	select_asset_by_uuid =>
-		"SELECT * FROM assets WHERE id=X?",
+		"SELECT * FROM assets WHERE id=?",
 	insert_asset =>
-		"REPLACE INTO assets VALUES (?,?,?,?,?,?,?,?)"
+		"REPLACE INTO assets VALUES (?,?,?,?,?,?,?)"
 );
 
 
 our @ASSETS_COLUMNS = (
-	"id",
 	"name",
 	"description",
 	"assetType",
-	"invType",
 	"local",
 	"temporary",
 	"data",
+	"id",
 );
 
 1;

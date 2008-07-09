@@ -1,4 +1,4 @@
-package OpenUGAI::Template;
+package Template;
 
 use strict;
 use Carp;
