@@ -1,0 +1,40 @@
+package OpenUGAI::Data::Assets;
+
+use strict;
+use OpenUGAI::DBData;
+use OpenUGAI::Utility;
+
+my %SQL = (
+    select_asset_by_uuid =>
+    "SELECT * FROM assets WHERE id=?",
+    insert_asset =>
+    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)"
+    );
+
+my @ASSETS_COLUMNS = (
+    "name",
+    "description",
+    "assetType",
+    "local",
+    "temporary",
+    "data",
+    "id",
+    );
+
+sub SelectAsset {
+    my $uuid = shift;
+    my $result = &OpenUGAI::DBData::getSimpleResult($SQL{select_asset_by_uuid}, $uuid);
+    my $count = @$result;
+    if ($count > 0) {
+	return $result->[0];
+    }
+    return undef;
+}
+
+sub UpdateAsset {
+    my $asset = shift;
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{insert_asset}, $asset);
+    return $res;
+}
+
+1;

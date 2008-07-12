@@ -11,15 +11,29 @@ use Storable;
 
 sub getHandlerList {
     my %list = (
-		"login_to_simulator" => \&_login_to_simulator,
-		"logout_of_simulator" => \&_logout_of_simulator,
-		"get_user_by_name" => \&_get_user_by_name,
-		"get_user_by_uuid" => \&_get_user_by_uuid,
-		"get_avatar_picker_avatar" => \&_get_avatar_picker_avatar,
-		"get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to inventory service or implemented in the hell.
-		"update_user_current_region" => \&_update_user_current_region,
+	"login_to_simulator" => \&_login_to_simulator,
+	"get_user_by_name" => \&_get_user_by_name,
+	"get_user_by_uuid" => \&_get_user_by_uuid,
+	"get_avatar_picker_avatar" => \&_get_avatar_picker_avatar, # TODO @@@
+	"add_new_user_friend" => \&_not_implemented,
+	"remove_user_frind" => \&_not_implemented,
+	"update_user_friend_perms" => \&_not_implemented,
+	"get_user_friend_list" => \&_not_implemented,
+	"get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to inventory service or implemented in the hell.
+	"update_avatar_appearance" => \&_update_avatar_appearance,
+	"update_user_current_region" => \&_update_user_current_region,
+	"logout_of_simulator" => \&_logout_of_simulator,
+	"get_agent_by_uuid" => \&_get_agent_by_uuid,
+	"register_messageserver" => \&_not_implemented,
+	"agent_change_region" => \&_agent_change_region,
+	"deregister_messageserver" => \&_deregister_messageserver,
+	"update_user_profile" => \&_not_implement,
 	);
     return \%list;
+}
+
+sub _not_implemented {
+    return &_make_false_response("not impleneted yet", "but I do not when will this works");
 }
 
 # ##################
@@ -30,61 +44,54 @@ sub Authenticate {
     my $login_pass = $params->{passwd};
     $login_pass =~ s/^\$1\$//;
     if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
-		return 0;
+	return 0;
     }
     if ($params->{weblogin}) {
-		my $key = &OpenUGAI::Utility::GenerateUUID();
-		Storable::store($user, $OpenUGAI::Config::LOGINKEYDIR . "/" . $key);
-		return $key;
+	my $key = &OpenUGAI::Utility::GenerateUUID();
+	Storable::store($user, $OpenUGAI::Config::LOGINKEYDIR . "/" . $key);
+	return $key;
     } else {
-		return $user;
+	return $user;
     }
 }
 
 sub LogOffUser {
-	my ($avatar_id, $region_id, $region_handle, $posx, $posy, $posz) = @_;
-	
+    my ($avatar_id, $region_id, $region_handle, $posx, $posy, $posz) = @_;
+    
 }
 
 # #################
 # Handlers
 sub _logout_of_simulator {
-	my $params = shift;
-	# TODO @@@ inform message server
-	if ($params->{avatar_uuid} && $params->{region_uuid} && $params->{region_handle}) {
-		my $posx = $params->{region_pos_x} || 128;
-		my $posy = $params->{region_pos_y} || 128;
-		my $posz = $params->{region_pos_z} || 128;
-		&LogoffUser($params->{avatar_uuid}, $params->{region_uuid}, $params->{region_handle}, $posx, $posy, $posz);
-	} else {
-	    return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
-	}
+    my $params = shift;
+    # TODO @@@ inform message server
+    if ($params->{avatar_uuid} && $params->{region_uuid} && $params->{region_handle}) {
+	my $posx = $params->{region_pos_x} || 128;
+	my $posy = $params->{region_pos_y} || 128;
+	my $posz = $params->{region_pos_z} || 128;
+	&LogoffUser($params->{avatar_uuid}, $params->{region_uuid}, $params->{region_handle}, $posx, $posy, $posz);
+    } else {
+	return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
+    }
 }
 
 sub _update_user_current_region {
-	my $params = shift;
-
-	my $returnString = "FALSE";
-	if ($params->{avatar_uuid}) {
-		my $profile = &OpenUGAI::UserServer::UserManager::getUserProfile($params->{avatar_uuid});
-		if ($profile->{CurrentAgent}) {
-			$profile->{CurrentAgent}->{Region} = $params->{region_uuid} || &OpenUGAI::Utility::ZeroUUID();
-			$profile->{CurrentAgent}->{Handle} = $params->{region_handle} || "1099511628032000"; # TODO @@@ use a default variable
-		} else {
-			; # TODO @@@ ???
-		}
-		&OpenUGAI::UserServer::UserManager::commitUserAgent($profile);
+    my $params = shift;
+    
+    my $returnString = "FALSE";
+    if ($params->{avatar_uuid}) {
+	my $profile = &OpenUGAI::UserServer::UserManager::getUserProfile($params->{avatar_uuid});
+	if ($profile->{CurrentAgent}) {
+	    $profile->{CurrentAgent}->{Region} = $params->{region_uuid} || &OpenUGAI::Utility::ZeroUUID();
+	    $profile->{CurrentAgent}->{Handle} = $params->{region_handle} || "1099511628032000"; # TODO @@@ use a default variable
 	} else {
-		; # TODO @@@ just follow what opensim dose, but not good.
+	    ; # TODO @@@ ???
 	}
-	my %response = (
-		returnString => $returnString,
-	);
-	return \%response;
-}
-
-sub _commit_agent{
-	my $profile = shift;
+	#&OpenUGAI:: UserServer::UserManager::commitUserAgent($profile);
+    } else {
+	; # TODO @@@ just follow what opensim dose, but not good.
+    }
+    return { returnString => $returnString, };
 }
 
 sub _get_avatar_appearance {
@@ -93,48 +100,70 @@ sub _get_avatar_appearance {
 	return &_make_false_response("not enough params", "You must have been eaten by a wolf - onwer needed");
     }
     my $owner = $params->{owner};
-    my $appearance = undef;
+    my %appearance = ();
     eval {
-	$appearance = &OpenUGAI::Data::Avatar::SelectAppearance($owner);
+	my $res = &OpenUGAI::Data::Avatar::SelectAppearance($owner);
+	if ($res) {
+	    $appearance{visual_params} = RPC::XML::base64->new($res->{Visual_Params});
+	    delete $res->{Visual_Params};
+	    $appearance{texture} = RPC::XML::base64->new($res->{Texture});
+	    delete $res->{Texture};
+	    map { $appearance{lc($_)} = RPC::XML::string->new($res->{$_}); } keys %$res;
+	}
     };
     if ($@) {
 	return &_make_false_response("can not get appearance", $@);
     }
-    return $appearance;
+    return \%appearance;
+}
+
+sub _update_avatar_appearance {
+    my $params = shift;
+    if (!$params->{owner}) {
+	return &_make_false_response("not enough params", "You must have been eaten by a wolf - onwer needed");
+    }
+    eval {
+	&OpenUGAI::Data::Avatar::UpdateAppearance($params);
+	# I have to say thanks MySQL very much, ...
+    };
+    if ($@) {
+	return &_make_false_response("can not update appearance", $@);
+    }
+    return { returnString => "TRUE" };
 }
 
 sub _login_to_simulator {
-	my $params = shift;
-	# check params
-	if (!$params->{first} || !$params->{last}) {
-		return &_make_false_response("not enough params", "You must have been eaten by a wolf");
-	}
-	# get the user (check passwd or from a saved webloginkey)
-	my $user = undef;
+    my $params = shift;
+    # check params
+    if (!$params->{first} || !$params->{last}) {
+	return &_make_false_response("not enough params", "You must have been eaten by a wolf");
+    }
+    # get the user (check passwd or from a saved webloginkey)
+    my $user = undef;
     if ($params->{passwd}) {
-		$user = &Authenticate($params);
-	} elsif ($params->{web_login_key}) {
-		my $key = $OpenUGAI::Config::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
-		$user = Storable::retrieve($key);
-		unlink($key);
-	} else {
-		return &_make_false_response("not enough params", "You must have been eaten by a wolf");    
-	}
-	if (!$user) {
-		return &_make_false_response("password not match", "Late! There is a wolf behind you");
-	}
-
-	# contact with Grid server
-	my %grid_request_params = (
-		region_handle => $user->{homeRegion},
-		authkey => undef
+	$user = &Authenticate($params);
+    } elsif ($params->{web_login_key}) {
+	my $key = $OpenUGAI::Config::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
+	$user = Storable::retrieve($key);
+	unlink($key);
+    } else {
+	return &_make_false_response("not enough params", "You must have been eaten by a wolf");    
+    }
+    if (!$user) {
+	return &_make_false_response("password not match", "Late! There is a wolf behind you");
+    }
+    
+    # contact with Grid server
+    my %grid_request_params = (
+	region_handle => $user->{homeRegion},
+	authkey => undef
 	);
-	OpenUGAI::Utility::Log("user", "grid_server_url", $OpenUGAI::Config::GRID_SERVER_URL);
+    &OpenUGAI::Utility::Log("user", "grid_server_url", $OpenUGAI::Config::GRID_SERVER_URL);
     my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Config::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
-	OpenUGAI::Utility::Log("user", "grid_response1", Data::Dump::dump($grid_response));
-	if (!$grid_response || $grid_response->{error}) {
-		return &_make_false_response("can not login", "requested region server is not alive -" . $grid_response->{error} . "-");
-	}
+    OpenUGAI::Utility::Log("user", "grid_response1", Data::Dump::dump($grid_response));
+    if (!$grid_response || $grid_response->{error}) {
+	return &_make_false_response("can not login", "requested region server is not alive -" . $grid_response->{error} . "-");
+    }
     my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
     my $internal_server_url = $grid_response->{internal_server_url}; # TODO: hack for regionservers behind a router
     # contact with Region server
@@ -157,14 +186,14 @@ sub _login_to_simulator {
 	);
     # TODO: using $internal_server_url is a temporary solution
     my $region_response = undef;
-	eval {
+    eval {
     	$region_response = &OpenUGAI::Utility::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
-	};
-	if ($@) {
-		return &_make_false_response("can not login", "failed to call expect_user: $@");
-	}
-
-	# contact with Inventory server
+    };
+    if ($@) {
+	return &_make_false_response("can not login", "failed to call expect_user: $@");
+    }
+    
+    # contact with Inventory server
     my $inventory_data = &_create_inventory_data($user->{UUID});
     # return to client
     my %response = (
@@ -252,7 +281,7 @@ sub _create_inventory_data {
 <?xml version="1.0" encoding="utf-8"?><guid>$user_id</guid>
 POSTDATA
     # TODO:
-	my $res = undef;
+    my $res = undef;
     eval {
     	$res = &OpenUGAI::Utility::HttpRequest("POST", $OpenUGAI::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
     };
@@ -260,36 +289,36 @@ POSTDATA
     	Carp::croak($@);
     }
     my $res_obj = &OpenUGAI::Utility::XML2Obj($res);
-	OpenUGAI::Utility::Log("test", "root_folders", Data::Dump::dump($res_obj));
-
+    OpenUGAI::Utility::Log("test", "root_folders", Data::Dump::dump($res_obj));
+    
 #    if (!$res_obj->{InventoryFolderBase}) {
 #	&OpenUGAI::Utility::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);
 #	# Sleep(10000); # TODO: need not to do this
 #	$res = &OpenUGAI::Utility::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
 #	$res_obj = &OpenUGAI::Utility::XML2Obj($res);
 #   }
-
+    
     my $folders = $res_obj->{InventoryFolderBase};
     my $folders_count = @$folders;
     if ($folders_count > 0) {
-		my @AgentInventoryFolders = ();
-		my $root_uuid = &OpenUGAI::Utility::ZeroUUID();
-		foreach my $folder (@$folders) {
-		    if ($folder->{ParentID}->{UUID} eq &OpenUGAI::Utility::ZeroUUID()) {
-				$root_uuid = $folder->{ID}->{UUID};
-		    }
-		    my %folder_hash = (
-				       name => $folder->{Name},
-				       parent_id => $folder->{ParentID}->{UUID},
-				       version => $folder->{Version},
-				       type_default => $folder->{Type},
-				       folder_id => $folder->{ID}->{UUID},
-				       );
-		    push @AgentInventoryFolders, \%folder_hash;
-		}
-		return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };
+	my @AgentInventoryFolders = ();
+	my $root_uuid = &OpenUGAI::Utility::ZeroUUID();
+	foreach my $folder (@$folders) {
+	    if ($folder->{ParentID}->{UUID} eq &OpenUGAI::Utility::ZeroUUID()) {
+		$root_uuid = $folder->{ID}->{UUID};
+	    }
+	    my %folder_hash = (
+		name => $folder->{Name},
+		parent_id => $folder->{ParentID}->{UUID},
+		version => $folder->{Version},
+		type_default => $folder->{Type},
+		folder_id => $folder->{ID}->{UUID},
+		);
+	    push @AgentInventoryFolders, \%folder_hash;
+	}
+	return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };
     } else {
-		# TODO: impossible ???
+	# TODO: impossible ???
     }
     return undef;
 }
