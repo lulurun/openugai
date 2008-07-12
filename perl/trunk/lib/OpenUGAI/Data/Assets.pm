@@ -4,14 +4,14 @@ use strict;
 use OpenUGAI::DBData;
 use OpenUGAI::Utility;
 
-my %SQL = (
+our %SQL = (
     select_asset_by_uuid =>
     "SELECT * FROM assets WHERE id=?",
     insert_asset =>
     "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)"
     );
 
-my @ASSETS_COLUMNS = (
+our @ASSETS_COLUMNS = (
     "name",
     "description",
     "assetType",

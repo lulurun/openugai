@@ -6,6 +6,7 @@ use OpenUGAI::Utility;
 use OpenUGAI::UserServer::Config;
 use OpenUGAI::UserServer::UserManager;
 use OpenUGAI::Data::Avatar;
+use OpenUGAI::Data::Users;
 use Digest::MD5;
 use Storable;
 
@@ -40,7 +41,7 @@ sub _not_implemented {
 #
 sub Authenticate {
     my $params = shift;
-    my $user = &OpenUGAI::UserServer::UserManager::getUserByName($params->{first}, $params->{last});
+    my $user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
     my $login_pass = $params->{passwd};
     $login_pass =~ s/^\$1\$//;
     if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
@@ -57,7 +58,6 @@ sub Authenticate {
 
 sub LogOffUser {
     my ($avatar_id, $region_id, $region_handle, $posx, $posy, $posz) = @_;
-    
 }
 
 # #################
@@ -246,7 +246,7 @@ sub _get_user_by_name {
     
     if ($param->{avatar_name}) {
 	my ($first, $last) = split(/\s+/, $param->{avatar_name});
-	my $user = &OpenUGAI::UserServer::UserManager::getUserByName($first, $last);
+	my $user = &OpenUGAI::Data::Users::getUserByName($first, $last);
 	if (!$user) {
 	    return &_unknown_user_response;
 	}
@@ -260,7 +260,7 @@ sub _get_user_by_uuid {
     my $param = shift;
     
     if ($param->{avatar_uuid}) {
-	my $user = &OpenUGAI::UserServer::UserManager::getUserByUUID($param->{avatar_uuid});
+	my $user = &OpenUGAI::Data::Users::getUserByUUID($param->{avatar_uuid});
 	if (!$user) {
 	    return &_unknown_user_response;
 	}
@@ -289,7 +289,6 @@ POSTDATA
     	Carp::croak($@);
     }
     my $res_obj = &OpenUGAI::Utility::XML2Obj($res);
-    OpenUGAI::Utility::Log("test", "root_folders", Data::Dump::dump($res_obj));
     
 #    if (!$res_obj->{InventoryFolderBase}) {
 #	&OpenUGAI::Utility::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);
@@ -399,7 +398,7 @@ sub OpenID_PRELogin {
     # select user (check existence of the user)
     my $user = undef;
     eval {
-	$user = &OpenUGAI::UserServer::UserManager::getUserByName($params->{first}, $params->{last});
+	$user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
     };
     if ($@) {
 	$response{error} = $@; # will be redirect to user login page

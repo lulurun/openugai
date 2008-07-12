@@ -4,7 +4,7 @@ use strict;
 use OpenUGAI::DBData;
 use OpenUGAI::Utility;
 
-my %SQL = (
+our %SQL = (
     select_region_by_uuid =>
     "SELECT * FROM regions WHERE uuid=?",
     select_region_by_handle =>
@@ -101,7 +101,8 @@ sub getRegionByHandle {
 
 sub getRegionList {
     my ($xmin, $ymin, $xmax, $ymax) = @_;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_region_list}, { $xmin, $xmax, $ymin, $ymax } );
+    my @args = ($xmin, $ymin, $xmax, $ymax);
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_region_list}, \@args );
     my $count = @$res;
     if ($count > 0) {
 	return $res;

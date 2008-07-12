@@ -5,8 +5,7 @@ use Carp;
 use XML::Serializer;
 use OpenUGAI::Utility;
 use OpenUGAI::Config;
-use OpenUGAI::InventoryServer::Config;
-use OpenUGAI::InventoryServer::InventoryManager;
+use OpenUGAI::Data::Inventory;
 
 sub getHandlerList {
     my %list = (
@@ -17,6 +16,7 @@ sub getHandlerList {
 	"NewItem" => \&_new_item,
 	"DeleteItem" => \&_delete_item,
 	"RootFolders" => \&_root_folders,
+	"UpdateFolder" => \&_update_folder,
 	);
     return \%list;
 }
@@ -26,13 +26,13 @@ sub getHandlerList {
 sub _get_inventory {
     my $post_data = shift;
     my $uuid = &_get_uuid($post_data);
-    my $inventry_folders = &OpenUGAI::InventoryServer::InventoryManager::getUserInventoryFolders($uuid);
+    my $inventry_folders = &OpenUGAI::Data::Inventory::getUserInventoryFolders($uuid);
     my @response_folders = ();
     foreach (@$inventry_folders) {
 	my $folder = &_convert_to_response_folder($_);
 	push @response_folders, $folder;
     }
-    my $inventry_items = &OpenUGAI::InventoryServer::InventoryManager::getUserInventoryItems($uuid);
+    my $inventry_items = &OpenUGAI::Data::Inventory::getUserInventoryItems($uuid);
     my @response_items = ();
     foreach (@$inventry_items) {
 	my $item = &_convert_to_response_item($_);
@@ -56,8 +56,18 @@ sub _create_inventory {
     my $uuid = &_get_uuid($post_data);
     my $InventoryFolders = &_create_default_inventory($uuid);
     foreach (@$InventoryFolders) {
-	&OpenUGAI::InventoryServer::InventoryManager::saveInventoryFolder($_);
+	&OpenUGAI::Data::Inventory::saveInventoryFolder($_);
     }
+    my $serializer = new XML::Serializer("true", "boolean");
+    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+}
+
+sub _update_folder {
+    # TODO @@@ copy from _new_folder, but "replace into" does not work everywhere
+    my $post_data = shift;
+    my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
+    my $folder = &_convert_to_db_folder($request_obj);
+    &OpenUGAI::Data::Inventory::saveInventoryFolder($folder);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
 }
@@ -66,7 +76,7 @@ sub _new_folder {
     my $post_data = shift;
     my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
     my $folder = &_convert_to_db_folder($request_obj);
-    &OpenUGAI::InventoryServer::InventoryManager::saveInventoryFolder($folder);
+    &OpenUGAI::Data::Inventory::saveInventoryFolder($folder);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
 }
@@ -74,16 +84,17 @@ sub _new_folder {
 sub _move_folder {
     my $post_data = shift;
     my $request_info = &OpenUGAI::Utility::XML2Obj($post_data);
-    &OpenUGAI::InventoryServer::InventoryManager::moveInventoryFolder($request_info);
+    &OpenUGAI::Data::Inventory::moveInventoryFolder($request_info);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
 }
 
 sub _new_item {
     my $post_data = shift;
+    # TODO @@@ check inventory id
     my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
     my $item = &_convert_to_db_item($request_obj);
-    &OpenUGAI::InventoryServer::InventoryManager::saveInventoryItem($item);
+    &OpenUGAI::Data::Inventory::saveInventoryItem($item);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
 }
@@ -92,7 +103,7 @@ sub _delete_item {
     my $post_data = shift;
     my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
     my $item_id = $request_obj->{ID}->{UUID};
-    &OpenUGAI::InventoryServer::InventoryManager::deleteInventoryItem($item_id);
+    &OpenUGAI::Data::Inventory::deleteInventoryItem($item_id);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
 }
@@ -101,11 +112,11 @@ sub _root_folders {
     my $post_data = shift;
     my $uuid = &_get_uuid($post_data);
     my $response = undef;
-    my $inventory_root_folder = &OpenUGAI::InventoryServer::InventoryManager::getRootFolder($uuid);
+    my $inventory_root_folder = &OpenUGAI::Data::Inventory::getRootFolder($uuid);
     if ($inventory_root_folder) {
 	my $root_folder_id = $inventory_root_folder->{folderID};
 	my $root_folder = &_convert_to_response_folder($inventory_root_folder);
-	my $root_folders = &OpenUGAI::InventoryServer::InventoryManager::getChildrenFolders($root_folder_id);
+	my $root_folders = &OpenUGAI::Data::Inventory::getChildrenFolders($root_folder_id);
 	my @folders = ($root_folder);
 	foreach(@$root_folders) {
 	    my $folder = &_convert_to_response_folder($_);
@@ -124,19 +135,25 @@ sub _root_folders {
 sub _convert_to_db_item {
     my $item = shift;
     my $ret = {
-	inventoryID => $item->{ID}->{UUID},
 	assetID => $item->{AssetID}->{UUID},
 	assetType => $item->{AssetType},
-	invType => $item->{InvType},
-	parentFolderID => $item->{Folder}->{UUID},
-	avatarID => $item->{Owner}->{UUID},
-	creatorID => $item->{Creator}->{UUID},
 	inventoryName => $item->{Name},
 	inventoryDescription => ref($item->{Description}) ? "" : $item->{Description},
 	inventoryNextPermissions => $item->{NextPermissions},
 	inventoryCurrentPermissions => $item->{CurrentPermissions},
-	inventoryBasePermissions => $item->{BasePermissions},
-	inventoryEveryOnePermissions => $item->{EveryOnePermissions},
+	invType => $item->{InvType},
+	creatorID => $item->{Creator}->{UUID},
+	inventoryBasePermissions => $item->{BasePermissions} || 0,
+	inventoryEveryOnePermissions => $item->{EveryOnePermissions} || 0,
+	"salePrice" => 0,
+	"saleType" => 0,
+	"creationDate" => time,
+	"groupID" => "00000000-0000-0000-0000-000000000000",
+	"groupOwned" => 0,
+	"flags" => 0,
+	inventoryID => $item->{ID}->{UUID}, # TODO @@@ this can not be null
+	avatarID => $item->{Owner}->{UUID},
+	parentFolderID => $item->{Folder}->{UUID},
     };
     return $ret;
 }
@@ -211,7 +228,7 @@ sub _create_default_inventory {
     push @InventoryFolders, &__create_folder_struct(&OpenUGAI::Utility::GenerateUUID(), $uuid, $root_folder_id, "Bodyparts", 13, 1);
     if ($save_flag) {
 	foreach(@InventoryFolders) {
-	    &OpenUGAI::InventoryServer::InventoryManager::saveInventoryFolder(&_convert_to_db_folder($_));
+	    &OpenUGAI::Data::Inventory::saveInventoryFolder(&_convert_to_db_folder($_));
 	}
     }
     return \@InventoryFolders;

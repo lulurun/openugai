@@ -14,7 +14,7 @@ sub getSimpleResult {
     my @db_args;
     if ($args_type eq "HASH") {
 	@db_args = keys %$args;
-    } elsif ($args_type) {
+    } elsif ($args_type eq "ARRAY") {
 	@db_args = @$args;
     } else {
 	push @db_args, $args;
