@@ -33,7 +33,11 @@ sub SelectAsset {
 
 sub UpdateAsset {
     my $asset = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{insert_asset}, $asset);
+    my @asset_args;
+    foreach(@ASSETS_COLUMNS) {
+	push @asset_args, $asset->{$_};
+    }
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{insert_asset}, \@asset_args);
     return $res;
 }
 
