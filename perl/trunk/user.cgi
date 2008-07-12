@@ -35,13 +35,13 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
 } else { # POST method, XMLRPC
     my $postdata = $param->{'POSTDATA'};
     if (!$postdata) {
-		&MyCGI::outputHtml("utf-8", "");
+	&MyCGI::outputHtml("utf-8", "");
     } else {
-		&OpenUGAI::Utility::Log("user", "request", $postdata);
-		my $xmlrpc = new XML::RPC();
-		my $response = $xmlrpc->receive($postdata, \&XMLRPCHandler);
-		&OpenUGAI::Utility::Log("user", "response", Data::Dump::dump $response);
-		&MyCGI::outputXml("utf-8", $response);
+	&OpenUGAI::Utility::Log("user", "request", $postdata);
+	my $xmlrpc = new XML::RPC();
+	my $response = $xmlrpc->receive($postdata, \&XMLRPCHandler);
+	&OpenUGAI::Utility::Log("user", "response", Data::Dump::dump $response);
+	&MyCGI::outputXml("utf-8", $response);
     }
 }
 

@@ -4,9 +4,9 @@ use strict;
 use OpenUGAI::Config;
 use OpenUGAI::Utility;
 use OpenUGAI::UserServer::Config;
-use OpenUGAI::UserServer::UserManager;
 use OpenUGAI::Data::Avatar;
 use OpenUGAI::Data::Users;
+use OpenUGAI::Data::Agents;
 use Digest::MD5;
 use Storable;
 
@@ -56,20 +56,23 @@ sub Authenticate {
     }
 }
 
-sub LogOffUser {
-    my ($avatar_id, $region_id, $region_handle, $posx, $posy, $posz) = @_;
-}
-
 # #################
 # Handlers
 sub _logout_of_simulator {
     my $params = shift;
-    # TODO @@@ inform message server
+   # TODO @@@ inform message server: NotifyMessageServersUserLoggOff
     if ($params->{avatar_uuid} && $params->{region_uuid} && $params->{region_handle}) {
 	my $posx = $params->{region_pos_x} || 128;
 	my $posy = $params->{region_pos_y} || 128;
 	my $posz = $params->{region_pos_z} || 128;
-	&LogoffUser($params->{avatar_uuid}, $params->{region_uuid}, $params->{region_handle}, $posx, $posy, $posz);
+	my @args = (
+	    $params->{region_handle},
+	    $params->{region_uuid},
+	    "<$posx,$posy,$posz>",
+	    time,
+	    $params->{avatar_uuid},
+	    );
+	&OpenUGAI::Data::Agents::AgentLogoff(@args);
     } else {
 	return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
     }
@@ -77,19 +80,12 @@ sub _logout_of_simulator {
 
 sub _update_user_current_region {
     my $params = shift;
-    
     my $returnString = "FALSE";
-    if ($params->{avatar_uuid}) {
-	my $profile = &OpenUGAI::UserServer::UserManager::getUserProfile($params->{avatar_uuid});
-	if ($profile->{CurrentAgent}) {
-	    $profile->{CurrentAgent}->{Region} = $params->{region_uuid} || &OpenUGAI::Utility::ZeroUUID();
-	    $profile->{CurrentAgent}->{Handle} = $params->{region_handle} || "1099511628032000"; # TODO @@@ use a default variable
-	} else {
-	    ; # TODO @@@ ???
-	}
-	#&OpenUGAI:: UserServer::UserManager::commitUserAgent($profile);
+    if ($params->{avatar_id} && $params->{region_uuid} && $params->{region_handle}) {
+	&OpenUGAI::Data::Agents::UpdateAgentCurrentRegion($params->{avatar_id},$params->{region_uuid}, $params->{region_handle});
+	$returnString = "TRUE";
     } else {
-	; # TODO @@@ just follow what opensim dose, but not good.
+	return &_make_false_response("not enough params", "You must have been eaten by a wolf");
     }
     return { returnString => $returnString, };
 }
@@ -152,16 +148,50 @@ sub _login_to_simulator {
     if (!$user) {
 	return &_make_false_response("password not match", "Late! There is a wolf behind you");
     }
-    
+    # check other online agent
+    my $agent = &OpenUGAI::Data::Agents::SelectAgent($user->{UUID});
+    if ($agent && $agent->{agentOnline}) {
+	# try to notify the online user agent
+	&OpenUGAI::Data::Agents::SetOnlineStatus($user->{UUID}, 0);
+	return &_make_false_response(
+	    "presence",
+	    "You appear to be already logged in. " .
+	    "If this is not the case please wait for your session to timeout. " .
+	    "If this takes longer than a few minutes please contact the grid owner. " .
+	    "Please wait 5 minutes if you are going to connect to a region nearby to" .
+	    "the region you were at previously."
+	    );
+    }
+    # get start region / location
+    my $region_handle;
+    my @start_location;
+    if ($params->{start} eq "last") {
+	if ($agent->{currentHandle}) {
+	    $region_handle = $agent->{currentHandle};
+	} else {
+	    $region_handle = $user->{homeRegion};	    
+	}
+	if ($agent->{currentPos} =~ /<([\d\.]+),([\d\.]+),([\d\.]+)>/) {
+	    @start_location = ($1, $2, $3);
+	} else {
+	    @start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
+	}
+    } elsif ($params->{start} eq "home") {
+	$region_handle = $user->{homeRegion};
+	@start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
+    } else {
+	# url login; # TODO @@@ parse opensim url
+	$region_handle = $user->{homeRegion};
+	@start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
+    }
     # contact with Grid server
     my %grid_request_params = (
-	region_handle => $user->{homeRegion},
+	region_handle => $region_handle,
 	authkey => undef
 	);
-    &OpenUGAI::Utility::Log("user", "grid_server_url", $OpenUGAI::Config::GRID_SERVER_URL);
     my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Config::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
-    OpenUGAI::Utility::Log("user", "grid_response1", Data::Dump::dump($grid_response));
     if (!$grid_response || $grid_response->{error}) {
+	# TODO @@@ do not report "can not", instead, drive agent to a living sim
 	return &_make_false_response("can not login", "requested region server is not alive -" . $grid_response->{error} . "-");
     }
     my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
@@ -178,13 +208,14 @@ sub _login_to_simulator {
 	lastname => $user->{lastname},
 	agent_id => $user->{UUID},
 	circuit_code => $circuit_code,
-	startpos_x => $user->{homeLocationX},
-	startpos_y => $user->{homeLocationY},
-	startpos_z => $user->{homeLocationZ},
-	regionhandle => $user->{homeRegion},
+	startpos_x => $start_location[0],
+	startpos_y => $start_location[1],
+	startpos_z => $start_location[2],
+	regionhandle => $region_handle,
 	caps_path => $caps_id,
 	);
     # TODO: using $internal_server_url is a temporary solution
+    &OpenUGAI::Utility::Log("user", "expect_user", Data::Dump::dump(\%region_request_params));
     my $region_response = undef;
     eval {
     	$region_response = &OpenUGAI::Utility::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
@@ -192,7 +223,19 @@ sub _login_to_simulator {
     if ($@) {
 	return &_make_false_response("can not login", "failed to call expect_user: $@");
     }
-    
+    # make agent data at this point
+    $agent->{UUID} = $user->{UUID};
+    $agent->{sessionID} = $session_id;
+    $agent->{secureSessionID} = $secure_session_id;
+    $agent->{loginTime} = time;
+    $agent->{currentRegion} = $grid_response->{region_UUID};
+    $agent->{currentHandle} = $grid_response->{regionHandle};
+    $agent->{currentPos} = "<$start_location[0],$start_location[1],$start_location[2]>";
+    $agent->{agentOnline} = 1;
+    $agent->{logoutTime} = 0;
+    $agent->{agentIP} = "";  # TODO @@@ 
+    $agent->{agentPort} = 0; # TODO @@@
+    &OpenUGAI::Data::Agents::AgentLogon($agent);    
     # contact with Inventory server
     my $inventory_data = &_create_inventory_data($user->{UUID});
     # return to client
@@ -221,9 +264,9 @@ sub _login_to_simulator {
 	seed_capability => $region_server_url . "/CAPS/" . $caps_id . "0000/", # https://sim2734.agni.lindenlab.com:12043/cap/61d6d8a0-2098-7eb4-2989-76265d80e9b6
 	look_at => &_make_r_string($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ}),
 	home => &_make_home_string(
-	    [$grid_response->{region_locx} * 256, $grid_response->{region_locy} * 256],
-	    [$user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationX}],
-	    [$user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ}]),
+	    [ $grid_response->{region_locx} * 256, $grid_response->{region_locy} * 256 ],
+	    [ $start_location[0], $start_location[1], $start_location[2] ],
+	    [ $user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ} ]), # TODO @@@ last lookat
 	"inventory-skeleton" => $inventory_data->{InventoryArray},
 	"inventory-root" => [ { folder_id => $inventory_data->{RootFolderID} } ],
 	"event_notifications" => \@OpenUGAI::UserServer::Config::event_notifications,
