@@ -20,7 +20,7 @@ sub getHandlerList {
 	"remove_user_frind" => \&_not_implemented,
 	"update_user_friend_perms" => \&_not_implemented,
 	"get_user_friend_list" => \&_not_implemented,
-	"get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to inventory service or implemented in the hell.
+	"get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to other service or implemented in the hell.
 	"update_avatar_appearance" => \&_update_avatar_appearance,
 	"update_user_current_region" => \&_update_user_current_region,
 	"logout_of_simulator" => \&_logout_of_simulator,
@@ -389,6 +389,10 @@ sub _convert_to_response {
 	home_look_y => $user->{homeLookAtY},
 	home_look_z => $user->{homeLookAtZ},
 	);
+    # TODO: OpenSim should handle this
+    foreach(keys %response) {
+	$response{$_} = RPC::XML::string->new( $response{$_} );
+    }    
     return \%response;
 }
 

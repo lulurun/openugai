@@ -177,16 +177,17 @@ sub _simulator_data_request {
 	return \%response;
     }
     
+    $response{"region_locx"} = $region_data->{locX};
+    $response{"region_locy"} = $region_data->{locY};
     $response{"sim_ip"} = $region_data->{serverIP};
     $response{"sim_port"} = $region_data->{serverPort};
     $response{"http_port"} = $region_data->{serverHttpPort};
     $response{"remoting_port"} = $region_data->{serverRemotingPort};
-    $response{"region_locx"} = $region_data->{locX};
-    $response{"region_locy"} = $region_data->{locY};
+    $response{"server_uri"} = $region_data->{serverURI};
     $response{"region_UUID"} = $region_data->{uuid};
     $response{"region_name"} = $region_data->{regionName};
-    $response{"regionHandle"} = $region_data->{regionHandle};
-    $response{"internal_server_url"} = $region_data->{serverURI}; # TODO @@@ hack !!!???
+    $response{"regionHandle"} = $region_data->{regionHandle}; # TODO: check opensim. maybe need not
+    $response{"internal_server_url"} = $region_data->{serverURI}; # TODO @@@ hack !!!??? only lulurun need this
     # TODO @@@ stupid, but its too late today
     foreach(keys %response) {
 	$response{$_} = RPC::XML::string->new( $response{$_} );
