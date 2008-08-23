@@ -24,7 +24,12 @@ sub getHandlerList {
 # Handlers
 sub _get_inventory {
     my $post_data = shift;
-    my $uuid = &_get_uuid($post_data);
+    my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
+
+    # secure inventory, but do nothing for now
+    &_validate_session($request_obj);
+
+    my $uuid = $request_obj->{Body};
     my $inventry_folders = &OpenUGAI::Data::Inventory::getUserInventoryFolders($uuid);
     my @response_folders = ();
     foreach (@$inventry_folders) {
@@ -65,7 +70,7 @@ sub _update_folder {
     # TODO @@@ copy from _new_folder, but "replace into" does not work everywhere
     my $post_data = shift;
     my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
-    my $folder = &_convert_to_db_folder($request_obj);
+    my $folder = &_convert_to_db_folder($request_obj->{Body});
     &OpenUGAI::Data::Inventory::saveInventoryFolder($folder);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
@@ -74,7 +79,7 @@ sub _update_folder {
 sub _new_folder {
     my $post_data = shift;
     my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
-    my $folder = &_convert_to_db_folder($request_obj);
+    my $folder = &_convert_to_db_folder($request_obj->{Body});
     &OpenUGAI::Data::Inventory::saveInventoryFolder($folder);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
@@ -82,8 +87,8 @@ sub _new_folder {
 
 sub _move_folder {
     my $post_data = shift;
-    my $request_info = &OpenUGAI::Utility::XML2Obj($post_data);
-    &OpenUGAI::Data::Inventory::moveInventoryFolder($request_info);
+    my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
+    &OpenUGAI::Data::Inventory::moveInventoryFolder($request_obj->{Body});
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
 }
@@ -92,7 +97,7 @@ sub _new_item {
     my $post_data = shift;
     # TODO @@@ check inventory id
     my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
-    my $item = &_convert_to_db_item($request_obj);
+    my $item = &_convert_to_db_item($request_obj->{Body});
     &OpenUGAI::Data::Inventory::saveInventoryItem($item);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
@@ -101,7 +106,8 @@ sub _new_item {
 sub _delete_item {
     my $post_data = shift;
     my $request_obj = &OpenUGAI::Utility::XML2Obj($post_data);
-    my $item_id = $request_obj->{ID}->{UUID};
+    my $item = $request_obj->{Body};
+    my $item_id = $item->{ID}->{UUID};
     &OpenUGAI::Data::Inventory::deleteInventoryItem($item_id);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
@@ -245,5 +251,22 @@ sub _get_uuid {
     }
 }
 
-1;
+sub _validate_session {
+    my $data = shift;
+    if (!$data->{SessionID} || !$data->{AvatarID} || !$data->{Body}) {
+	Carp::croak("invalid data format");	
+    }
+    my $session_id = $data->{SessionID};
+    my $user_id = $data->{AvatarID};
+    if ( !&_check_auth_session($user_id, $session_id) ) {
+	Carp::croak("invalid session id");
+    }
+}
 
+sub _check_auth_session {
+    # TODO @@@ not inplemented
+    return 1;
+}
+
+
+1;
