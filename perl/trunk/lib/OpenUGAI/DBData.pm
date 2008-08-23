@@ -1,10 +1,7 @@
 package OpenUGAI::DBData;
 
+use OpenUGAI::Global;
 use DBHandler;
-
-our $DSN = "dbi:mysql:opensim;host=localhost;";
-our $DBUSER = "opensim";
-our $DBPASS = "opensim";
 
 sub getSimpleResult {
     my ($sql, $args) = @_;
@@ -20,7 +17,7 @@ sub getSimpleResult {
 	push @db_args, $args;
     }
     eval {
-	$dbh = &DBHandler::getConnection($DSN, $DBUSER, $DBPASS);
+	$dbh = &DBHandler::getConnection($OpenUGAI::Global::DSN, $OpenUGAI::Global::DBUSER, $OpenUGAI::Global::DBPASS);
 	my $st = new Statement($dbh, $sql);
 	$result = $st->exec(@db_args);
     };

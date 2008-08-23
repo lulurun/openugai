@@ -1,8 +1,11 @@
 package OpenUGAI::GridServer;
 
 use strict;
+use OpenUGAI::Global;
 use OpenUGAI::Utility;
 use OpenUGAI::Data::Regions;
+
+our $ValidateContactable = 0;
 
 sub getHandlerList {
     my %list = (
@@ -71,12 +74,12 @@ sub _simulator_login {
 	    westOverrideHandle => undef,
 	    southOverrideHandle => undef,
 	    northOverrideHandle => undef,
-	    regionAssetURI => $OpenUGAI::Config::ASSET_SERVER_URL,
-	    regionAssetRecvKey => $OpenUGAI::Config::ASSET_RECV_KEY,
-	    regionAssetSendKey => $OpenUGAI::Config::ASSET_SEND_KEY,
-	    regionUserURI => $OpenUGAI::Config::USER_SERVER_URL,
-	    regionUserRecvKey => $OpenUGAI::Config::USER_RECV_KEY,
-	    regionUserSendKey => $OpenUGAI::Config::USER_SEND_KEY,
+	    regionAssetURI => $OpenUGAI::Global::ASSET_SERVER_URL,
+	    regionAssetRecvKey => $OpenUGAI::Global::ASSET_RECV_KEY,
+	    regionAssetSendKey => $OpenUGAI::Global::ASSET_SEND_KEY,
+	    regionUserURI => $OpenUGAI::Global::USER_SERVER_URL,
+	    regionUserRecvKey => $OpenUGAI::Global::USER_RECV_KEY,
+	    regionUserSendKey => $OpenUGAI::Global::USER_SEND_KEY,
 	    regionMapTexture => $params->{"map-image-id"},
 	    serverHttpPort => $params->{http_port},
 	    serverRemotingPort => $params->{remoting_port},
@@ -240,7 +243,7 @@ sub getRegionHandle {
 
 sub ValidateNewRegionKeys {
     my $params = shift;
-    if ($params->{recvkey} ne $OpenUGAI::Config::SIM_RECV_KEY || $params->{authkey} ne $OpenUGAI::Config::SIM_SEND_KEY) {
+    if ($params->{recvkey} ne $OpenUGAI::Global::SIM_RECV_KEY || $params->{authkey} ne $OpenUGAI::Global::SIM_SEND_KEY) {
 	Carp::croak("Authentication failed when trying to login existing region $params->{sim_name}");
     }
 }
@@ -254,6 +257,7 @@ sub ValidateOverwriteKeys {
 
 sub ValidateRegionContactable {
     my $params = shift;
+    return if (!$ValidateContactable);
     my $region_status_url = "http://" . $params->{sim_ip} . ":" . $params->{http_port} . "/simstatus/";
     my $res_contents = undef;
     eval {

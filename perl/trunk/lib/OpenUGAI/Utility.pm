@@ -4,7 +4,7 @@ use strict;
 use XML::RPC;
 use XML::Simple;
 use Data::UUID;
-use OpenUGAI::Config;
+use OpenUGAI::Global;
 use Socket;
 use Math::BigInt;
 use LWP::UserAgent;
@@ -153,7 +153,7 @@ sub XML2Obj {
 sub Log {
 	my $server_name = shift;
 	my @param = @_;
-    open(FILE, ">>" . $OpenUGAI::Config::LOGDIR . "/" . $server_name . ".log");
+    open(FILE, ">>" . $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log");
 	foreach(@param) {
     	print FILE $_ . "\n";
 	}

@@ -5,6 +5,7 @@ use Carp;
 use MyCGI;
 use OpenUGAI::Utility;
 use OpenUGAI::AssetServer;
+require "config.pl";
 
 # !!
 # TODO: ERROR code

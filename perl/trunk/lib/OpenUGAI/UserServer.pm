@@ -1,7 +1,7 @@
 package OpenUGAI::UserServer;
 
 use strict;
-use OpenUGAI::Config;
+use OpenUGAI::Global;
 use OpenUGAI::Utility;
 use OpenUGAI::UserServer::Config;
 use OpenUGAI::Data::Avatar;
@@ -49,7 +49,7 @@ sub Authenticate {
     }
     if ($params->{weblogin}) {
 	my $key = &OpenUGAI::Utility::GenerateUUID();
-	Storable::store($user, $OpenUGAI::Config::LOGINKEYDIR . "/" . $key);
+	Storable::store($user, $OpenUGAI::Global::LOGINKEYDIR . "/" . $key);
 	return $key;
     } else {
 	return $user;
@@ -139,7 +139,7 @@ sub _login_to_simulator {
     if ($params->{passwd}) {
 	$user = &Authenticate($params);
     } elsif ($params->{web_login_key}) {
-	my $key = $OpenUGAI::Config::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
+	my $key = $OpenUGAI::Global::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
 	$user = Storable::retrieve($key);
 	unlink($key);
     } else {
@@ -189,7 +189,7 @@ sub _login_to_simulator {
 	region_handle => $region_handle,
 	authkey => undef
 	);
-    my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Config::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
+    my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
     if (!$grid_response || $grid_response->{error}) {
 	# TODO @@@ do not report "can not", instead, drive agent to a living sim
 	return &_make_false_response("can not login", "requested region server is not alive -" . $grid_response->{error} . "-");
@@ -326,7 +326,7 @@ POSTDATA
     # TODO:
     my $res = undef;
     eval {
-    	$res = &OpenUGAI::Utility::HttpRequest("POST", $OpenUGAI::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
+    	$res = &OpenUGAI::Utility::HttpRequest("POST", $OpenUGAI::Global::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
     };
     if ($@) {
     	Carp::croak($@);
@@ -457,7 +457,7 @@ sub OpenID_PRELogin {
 	region_handle => $user->{homeRegion},
 	authkey => undef
 	);
-    my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Config::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
+    my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
     my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
     # contact with Region server
     my $session_id = &OpenUGAI::Utility::GenerateUUID;

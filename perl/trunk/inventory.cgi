@@ -4,6 +4,7 @@ use strict;
 use MyCGI;
 use OpenUGAI::InventoryServer;
 use Carp;
+require "config.pl";
 
 my $request_uri = $ENV{REQUEST_URI} || Carp::croak("You must have been eaten by a wolf.");
 my $request_method = "";

@@ -4,7 +4,6 @@ use strict;
 use Carp;
 use XML::Serializer;
 use OpenUGAI::Utility;
-use OpenUGAI::Config;
 use OpenUGAI::Data::Inventory;
 
 sub getHandlerList {

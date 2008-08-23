@@ -6,6 +6,7 @@ use XML::RPC;
 use MyCGI;
 use OpenUGAI::Utility;
 use OpenUGAI::GridServer;
+require "config.pl";
 
 my $param = &MyCGI::getParam();
 my $request = $param->{'POSTDATA'};

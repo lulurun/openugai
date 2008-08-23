@@ -2,12 +2,12 @@
 
 use strict;
 use Carp;
-#use XML::RPC;
 use MyCGI;
 use Template;
 use OpenUGAI::Utility;
 use OpenUGAI::UserServer;
 use Data::Dump;
+require "config.pl";
 
 my $param = &MyCGI::getParam();
 if ($ENV{"REQUEST_METHOD"} eq "GET") {

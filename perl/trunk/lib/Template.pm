@@ -1,8 +1,9 @@
+# waiting for better solution
 package Template;
 
 use strict;
 use Carp;
-use OpenUGAI::Config;
+use OpenUGAI::Global;
 
 our %OPENSIM_TEMPLATE = (
     login_form => "",
@@ -17,7 +18,7 @@ sub Get {
 
 sub _load {
     my $tmpl_name = shift;
-    my $file = $OpenUGAI::Config::TMPLDIR . "/" . $tmpl_name;
+    my $file = $OpenUGAI::Global::TMPLDIR . "/" . $tmpl_name;
     open(FILE, $file) || croak("can not open $file"); # fatal,need no error handle
     my @lines = <FILE>;
     close(FILE);
