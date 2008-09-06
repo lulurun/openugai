@@ -11,7 +11,7 @@ require "config.pl";
 
 my $param = &MyCGI::getParam();
 if ($ENV{"REQUEST_METHOD"} eq "GET") {
-    my $method = $param->{method};
+    my $method = $param->{method} || "";
     if ($method eq "login") {
 	&MyCGI::outputHtml("utf-8", &login_form($param));
     } elsif ($method eq "go") {
@@ -40,7 +40,7 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
 	&OpenUGAI::Utility::Log("user", "request", $postdata);
 	my $xmlrpc = new XML::RPC();
 	my $response = $xmlrpc->receive($postdata, \&XMLRPCHandler);
-	&OpenUGAI::Utility::Log("user", "response", Data::Dump::dump $response);
+	&OpenUGAI::Utility::Log("user", "response", Data::Dump::dump($response));
 	&MyCGI::outputXml("utf-8", $response);
     }
 }

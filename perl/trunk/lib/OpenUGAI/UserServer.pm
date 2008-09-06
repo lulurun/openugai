@@ -93,7 +93,7 @@ sub _update_user_current_region {
 sub _get_avatar_appearance {
     my $params = shift;
     if (!$params->{owner}) {
-	return &_make_false_response("not enough params", "You must have been eaten by a wolf - onwer needed");
+	return &_make_error_response("unknown_avatar", "You must have been eaten by a wolf - onwer needed");
     }
     my $owner = $params->{owner};
     my %appearance = ();
@@ -105,10 +105,12 @@ sub _get_avatar_appearance {
 	    $appearance{texture} = RPC::XML::base64->new($res->{Texture});
 	    delete $res->{Texture};
 	    map { $appearance{lc($_)} = RPC::XML::string->new($res->{$_}); } keys %$res;
+	} else {
+	    Carp::croak("There was no appearance found for this avatar");
 	}
     };
     if ($@) {
-	return &_make_false_response("can not get appearance", $@);
+	return &_make_error_response("no appearance", $@);
     }
     return \%appearance;
 }
@@ -116,7 +118,7 @@ sub _get_avatar_appearance {
 sub _update_avatar_appearance {
     my $params = shift;
     if (!$params->{owner}) {
-	return &_make_false_response("not enough params", "You must have been eaten by a wolf - onwer needed");
+	return &_make_error_response("unknown_avatar", "You must have been eaten by a wolf - onwer needed");
     }
     eval {
 	&OpenUGAI::Data::Avatar::UpdateAppearance($params);
@@ -401,6 +403,11 @@ sub _convert_to_response {
 sub _make_false_response {
     my ($reason, $message) = @_;
     return { reason => $reason, login => "false", message => $message };
+}
+
+sub _make_error_response {
+    my ($err_type, $err_desc) = @_;
+    return { error_type => $err_type, error_desc => $err_desc };
 }
 
 sub _unknown_user_response {
