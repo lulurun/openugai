@@ -1,5 +1,7 @@
 package OpenUGAI::Avatar::Appearance;
 
+use Data::Dump;
+
 use constant VersionString => "LLWearable version 22";
 use constant WearableType => {
     Shape => 0,
@@ -141,19 +143,23 @@ sub _parse_parameters {
 sub _parse_textures {
     my $buffer = shift;
     my @lines = split(/\n/, $buffer);
-    my %texture = ();
+    my $textures_header = shift @lines;
+    my %textures = ();
     foreach (@lines) {
 	my ($type, $uuid) = split(/\s+/, $_);
+	next if ($type !~ /^\d+$/);
 	$textures{$type} = $uuid;
     }
-    return shift;
+    $textures{"header"} = $textures_header;
+    return \%textures;
 }
 
 sub _textures_to_string {
     my $textures = shift;
-    my $buffer = "";
+    my $buffer = $textures->{"header"} . "\n";
     foreach (keys %$textures) {
-	$buffer = $_ . " " . $textures->{$_} . "\n";
+	next if ($_ eq "header");
+	$buffer .= $_ . " " . $textures->{$_} . "\n";
     }
     return $buffer;
 }
