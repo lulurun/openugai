@@ -9,6 +9,8 @@ our %SQL = (
     "select * from avatarappearance where owner=?",
     update_avatar_appearance =>
     "replace into avatarappearance values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    update_avatar_appearance_raw_data =>
+    "replace into avatarappearance values(?,?,X?,X?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
 );
 
 our @APPEARANCE_COLUMNS = (
@@ -60,9 +62,19 @@ sub UpdateAppearance {
     my $appearance = shift;
     my @args = ();
     foreach( @APPEARANCE_COLUMNS ) {
-	push @args, $appearance->{lc($_)};
+	push @args, $appearance->{lc($_)}; # stupid lc because stupid opensim impl
     }
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_appearance}, \@args);
+    return $res;
+}
+
+sub UpdateAppearance_RawData {
+    my $appearance = shift;
+    my @args = ();
+    foreach( @APPEARANCE_COLUMNS ) {
+	push @args, $appearance->{lc($_)}; # stupid lc because stupid opensim impl
+    }
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_appearance_raw_data}, \@args);
     return $res;
 }
 
