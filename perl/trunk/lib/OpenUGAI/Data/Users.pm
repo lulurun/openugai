@@ -10,7 +10,7 @@ our %SQL = (
     select_user_by_uuid =>
     "select * from users where uuid=?",
     create_user =>
-    "insert into users values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    "replace into users values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     update_user_by_uuid =>
     "update users set username=?,lastname=?,passwordHash=?,passwordSalt=?,homeRegion=?,homeLocationX=?,homeLocationY =?,homeLocationZ=?,homeLookAtX=?,homeLookAtY=?,homeLookAtZ=?,created=?,lastLogin=?,userInventoryURI=?,userAssetURI=?,profileCanDoMask=?,profileWantDoMask=?,profileAboutText=?,profileFirstText=?,profileImage=?,profileFirstImage=?,webLoginKey=? WHERE UUID=?",
     get_avatar_appearance =>
@@ -74,7 +74,7 @@ sub createUser {
     foreach (@USERS_COLUMNS) {
 	push @params, $user->{$_};
     }
-    my $res = &OpenUGAI::Utility::getSimpleResult($SQL{create_user}, \@params);
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{create_user}, \@params);
 }
 
 sub updateUserByUUID {
@@ -84,7 +84,7 @@ sub updateUserByUUID {
 	push @params, $user->{$_};
     }
     push @params, shift @params;
-    my $res = &OpenUGAI::Utility::getSimpleResult($SQL{update_user_by_uuid}, \@params);
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_user_by_uuid}, \@params);
 }
 
 1;
