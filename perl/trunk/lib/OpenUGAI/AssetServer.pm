@@ -3,8 +3,13 @@ package OpenUGAI::AssetServer;
 use strict;
 use MIME::Base64;
 use XML::Simple;
-use OpenUGAI::Utility;
-use OpenUGAI::Data::Assets;
+use OpenUGAI::AssetServer::Storage;
+
+our $AssetStorage = undef;
+# hope you are running mop_perl
+BEGIN {
+    $AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance();
+}
 
 # !!
 # TODO: delete asset
@@ -13,7 +18,7 @@ use OpenUGAI::Data::Assets;
 sub getAsset {
     my ($asset_id, $param) = @_;
     # get asset
-    my $asset = &OpenUGAI::Data::Assets::SelectAsset($asset_id);
+    my $asset = $AssetStorage->getAsset($asset_id);
     # make response
     return &_asset_to_xml($asset);
 }
@@ -21,7 +26,7 @@ sub getAsset {
 sub saveAsset {
     my $xml = shift;
     my $asset = &_xml_to_asset($xml);
-    &OpenUGAI::Data::Assets::UpdateAsset($asset);
+    $AssetStorage->saveAsset($asset);
     return "";
     # TODO: temporary solution of "success!"
     # TODO: message for save failed

@@ -215,6 +215,7 @@ sub _login_to_simulator {
 	startpos_z => $start_location[2],
 	regionhandle => $region_handle,
 	caps_path => $caps_id,
+	user_server_url => "http://192.168.0.150/perl/trunk/user.cgi",
 	);
     # TODO: using $internal_server_url is a temporary solution
     &OpenUGAI::Utility::Log("user", "expect_user", Data::Dump::dump(\%region_request_params));
