@@ -2,14 +2,14 @@ package InventoryTester;
 
 use strict;
 use XML::Serializer;
-use OpenUGAI::Utility;
+use OpenUGAI::Util;
 
 sub init {
-	&OpenSimTest::Config::registerHandler("create_inventory", \&_create_inventory);
-	&OpenSimTest::Config::registerHandler("root_folders", \&_root_folders);
-	&OpenSimTest::Config::registerHandler("get_inventory", \&_get_inventory);
-	&OpenSimTest::Config::registerHandler("new_item", \&_new_item);
-	&OpenSimTest::Config::registerHandler("new_folder", \&_new_folder);
+	&OpenUGAITester::Config::registerHandler("create_inventory", \&_create_inventory);
+	&OpenUGAITester::Config::registerHandler("root_folders", \&_root_folders);
+	&OpenUGAITester::Config::registerHandler("get_inventory", \&_get_inventory);
+	&OpenUGAITester::Config::registerHandler("new_item", \&_new_item);
+	&OpenUGAITester::Config::registerHandler("new_folder", \&_new_folder);
 }
 
 sub _apache_flag {
@@ -18,7 +18,7 @@ sub _apache_flag {
 }
 
 sub _new_folder {
-	my $url = shift || $OpenSimTest::Config::INVENTORY_SERVER_URL;
+	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $post_data =<<"POSTDATA";
 <InventoryFolderBase>
 <name>New Folder</name>
@@ -38,11 +38,11 @@ POSTDATA
 	if (&_apache_flag($url)) {
 		$post_data = "POSTDATA=" . $post_data; # TODO: bad temporary solution
 	}
-	my $res = &OpenUGAI::Utility::HttpRequest("POST",$url . "/NewFolder/", $post_data) . "\n";
+	my $res = &OpenUGAI::Util::HttpRequest("POST",$url . "/NewFolder/", $post_data) . "\n";
 }
 
 sub _new_item {
-	my $url = shift || $OpenSimTest::Config::INVENTORY_SERVER_URL;
+	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $post_data =<<"POSTDATA";
 <InventoryItemBase>
 	<inventoryID>
@@ -73,42 +73,42 @@ POSTDATA
 	if (&_apache_flag($url)) {
 		$post_data = "POSTDATA=" . $post_data;
 	}
-	my $res = &OpenUGAI::Utility::HttpRequest("POST", $url . "/NewItem/", $post_data) . "\n";
+	my $res = &OpenUGAI::Util::HttpRequest("POST", $url . "/NewItem/", $post_data) . "\n";
 }
 
 sub _get_inventory {
-	my $url = shift || $OpenSimTest::Config::INVENTORY_SERVER_URL;
+	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $uuid = shift;
 	my $serializer = new XML::Serializer($uuid, "guid");
 	my $post_data = $serializer->to_string(XML::Serializer::WITH_HEADER);
 	if (&_apache_flag($url)) {
 		$post_data = "POSTDATA=" . $post_data;
 	}
-	my $res = &OpenUGAI::Utility::HttpRequest("POST", $url . "/GetInventory/", $post_data) . "\n";
+	my $res = &OpenUGAI::Util::HttpRequest("POST", $url . "/GetInventory/", $post_data) . "\n";
 	return $res;
 }
 
 sub _create_inventory {
-	my $url = shift || $OpenSimTest::Config::INVENTORY_SERVER_URL;
+	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $uuid = shift;
 	my $serializer = new XML::Serializer($uuid, "guid");
 	my $post_data = $serializer->to_string(XML::Serializer::WITH_HEADER);
 	if (&_apache_flag($url)) {
 		$post_data = "POSTDATA=" . $post_data;
 	}
-	my $res = &OpenUGAI::Utility::HttpRequest("POST", $url . "/CreateInventory/", $post_data) . "\n";
+	my $res = &OpenUGAI::Util::HttpRequest("POST", $url . "/CreateInventory/", $post_data) . "\n";
 	return 1;
 }
 
 sub _root_folders {
-	my $url = shift || $OpenSimTest::Config::INVENTORY_SERVER_URL;
+	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $uuid = shift;
 	my $serializer = new XML::Serializer($uuid, "guid");
 	my $post_data = $serializer->to_string(XML::Serializer::WITH_HEADER);
 	if (&_apache_flag($url)) {
 		$post_data = "POSTDATA=" . $post_data;
 	}
-	my $res = &OpenUGAI::Utility::HttpRequest("POST", $url . "/RootFolders/", $post_data) . "\n";
+	my $res = &OpenUGAI::Util::HttpRequest("POST", $url . "/RootFolders/", $post_data) . "\n";
 	return 1;
 }
 

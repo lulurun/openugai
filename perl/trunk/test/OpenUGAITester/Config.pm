@@ -1,4 +1,4 @@
-package OpenSimTest::Config;
+package OpenUGAITester::Config;
 
 use strict;
 

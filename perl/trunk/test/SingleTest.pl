@@ -11,11 +11,10 @@
 
 use strict;
 use Data::Dump;
-use OpenSimTest;
+use OpenUGAITester;
 
-&OpenSimTest::init();
+&OpenUGAITester::init();
 my $url = shift @ARGV;
-#my $url = "http://localhost:8002";
-my $result = &OpenSimTest::SingleTest($url, @ARGV);
+my $result = &OpenUGAITester::SingleTest($url, @ARGV);
 Data::Dump::dump($result);
 
