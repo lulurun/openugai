@@ -11,6 +11,9 @@ our $SIM_SEND_KEY = "null";
 our $ASSET_SERVER_URL = "http://openugai.work.lulu/perl/trunk/asset.cgi";
 our $ASSET_RECV_KEY = "null";
 our $ASSET_SEND_KEY = "null";
+
+our $AssetStorage = "mysql";
+
 # USER
 #our $USER_SERVER_URL = "http://127.0.0.1:8001/";
 our $USER_SERVER_URL = "http://openugai.work.lulu/perl/trunk/user.cgi";
@@ -31,7 +34,7 @@ our $TMPLDIR = "/srv/www/openugai/perl/trunk/template";
 our $LOGINKEYDIR = "/srv/www/openugai/perl/trunk/loginkey";
 
 # DB Settings
-our $DSN = "dbi:mysql:opensim;host=localhost;";
+our $DSN = "dbi:mysql:openugai;host=localhost;";
 our $DBUSER = "opensim";
 our $DBPASS = "opensim";
 

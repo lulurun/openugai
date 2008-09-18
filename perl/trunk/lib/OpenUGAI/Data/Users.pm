@@ -2,7 +2,6 @@ package OpenUGAI::Data::Users;
 
 use strict;
 use OpenUGAI::DBData;
-use OpenUGAI::Utility;
 
 our %SQL = (
     select_user_by_name =>

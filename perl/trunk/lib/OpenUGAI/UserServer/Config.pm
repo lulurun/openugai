@@ -2,63 +2,6 @@ package OpenUGAI::UserServer::Config;
 
 use strict;
 
-our %SYS_SQL = (
-	select_user_by_name =>
-	"select * from users where lcase(username)=? and lcase(lastname)=?",
-	select_user_by_uuid =>
-	"select * from users where uuid=?",
-	create_user =>
-	"insert into users values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-	update_user_by_uuid =>
-	"update users set username=?,lastname=?,passwordHash=?,passwordSalt=?,homeRegion=?,homeLocationX=?,homeLocationY =?,homeLocationZ=?,homeLookAtX=?,homeLookAtY=?,homeLookAtZ=?,created=?,lastLogin=?,userInventoryURI=?,userAssetURI=?,profileCanDoMask=?,profileWantDoMask=?,profileAboutText=?,profileFirstText=?,profileImage=?,profileFirstImage=?,webLoginKey=? WHERE UUID=?",
-	get_avatar_appearance =>
-	"select * from avatarappearance where Owner=?",
-	select_agent_by_uuid =>
-	"select * from agents",
-	insert_agent =>
-	"REPLACE INTO agents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-);
-
-our @AGENTS_COLUMNS = (
-	"UUID",
-	"sessionID", 
-	"secureSessionID", 
-	"agentIP", 
-	"agentPort", 
-	"agentOnline", 
-	"loginTime", 
-	"logoutTime", 
-	"currentRegion", 
-	"currentHandle", 
-	"currentPos",   
-);
-
-our @USERS_COLUMNS = (
-	"UUID",
-	"username",
-	"lastname",
-	"passwordHash",
-	"passwordSalt",
-	"homeRegion",
-	"homeLocationX",
-	"homeLocationY",
-	"homeLocationZ",
-	"homeLookAtX",
-	"homeLookAtY",
-	"homeLookAtZ",
-	"created",
-	"lastLogin",
-	"userInventoryURI",
-	"userAssetURI",
-	"profileCanDoMask",
-	"profileWantDoMask",
-	"profileAboutText",
-	"profileFirstText",
-	"profileImage",
-	"profileFirstImage",
-	"webLoginKey",
-);
-
 our @classified_categories = (
 	{ category_id => 1, category_name => "Shopping" },
 	{ category_id => 2, category_name => "Land Rental" },

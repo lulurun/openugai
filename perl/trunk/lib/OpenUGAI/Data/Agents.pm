@@ -2,7 +2,6 @@ package OpenUGAI::Data::Agents;
 
 use strict;
 use OpenUGAI::DBData;
-use OpenUGAI::Utility;
 
 my %SQL = (
     select_agent_by_uuid =>
@@ -52,7 +51,6 @@ sub UpdateAgent {
     foreach (@AGENTS_COLUMNS) {
 	push @args, $params->{$_};
     }
-    &OpenUGAI::Utility::Log("user", "agent", Data::Dump::dump(@args));
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_agent}, \@args);
     return $res;
 }

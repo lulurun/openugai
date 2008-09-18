@@ -3,7 +3,7 @@
 use strict;
 use Carp;
 use MyCGI;
-use OpenUGAI::Utility;
+use OpenUGAI::Util;
 use OpenUGAI::AssetServer;
 require "config.pl";
 
@@ -14,12 +14,12 @@ my $param = &MyCGI::getParam();
 my $response = "<ERROR />";
 if ($ENV{REQUEST_METHOD} eq "POST") {
 	my $request = $param->{'POSTDATA'};
-	&OpenUGAI::Utility::Log("asset", "request", $ENV{REQUEST_URI}, $request);
+	&OpenUGAI::Util::Log("asset", "request", $ENV{REQUEST_URI}, $request);
 	$response = &OpenUGAI::AssetServer::saveAsset($request);
 } else { # get
 	eval {
 		my $rest_param = &getRestParam();
-		&OpenUGAI::Utility::Log("asset", "request", $ENV{REQUEST_URI});
+		&OpenUGAI::Util::Log("asset", "request", $ENV{REQUEST_URI});
 		my $rest_param_count = @$rest_param;
 		if ($rest_param_count < 2) {
 			Carp::croak("You must have been eaten by a wolf.");
@@ -30,7 +30,7 @@ if ($ENV{REQUEST_METHOD} eq "POST") {
 		$response = "<ERROR>$@</ERROR>"; # TODO: better return message needed.
 	}
 }
-&OpenUGAI::Utility::Log("asset", "response", $response);
+&OpenUGAI::Util::Log("asset", "response", $response);
 &MyCGI::outputXml("utf-8", $response);
 
 sub getRestParam {

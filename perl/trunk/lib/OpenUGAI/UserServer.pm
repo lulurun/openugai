@@ -1,14 +1,15 @@
 package OpenUGAI::UserServer;
 
 use strict;
+use Storable;
+use Digest::MD5;
+
 use OpenUGAI::Global;
-use OpenUGAI::Utility;
+use OpenUGAI::Util;
 use OpenUGAI::UserServer::Config;
 use OpenUGAI::Data::Avatar;
 use OpenUGAI::Data::Users;
 use OpenUGAI::Data::Agents;
-use Digest::MD5;
-use Storable;
 
 sub getHandlerList {
     my %list = (
@@ -48,7 +49,7 @@ sub Authenticate {
 	return 0;
     }
     if ($params->{weblogin}) {
-	my $key = &OpenUGAI::Utility::GenerateUUID();
+	my $key = &OpenUGAI::Util::GenerateUUID();
 	Storable::store($user, $OpenUGAI::Global::LOGINKEYDIR . "/" . $key);
 	return $key;
     } else {
@@ -191,7 +192,7 @@ sub _login_to_simulator {
 	region_handle => $region_handle,
 	authkey => undef
 	);
-    my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
+    my $grid_response = &OpenUGAI::Util::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
     if (!$grid_response || $grid_response->{error}) {
 	# TODO @@@ do not report "can not", instead, drive agent to a living sim
 	return &_make_false_response("can not login", "requested region server is not alive -" . $grid_response->{error} . "-");
@@ -199,10 +200,10 @@ sub _login_to_simulator {
     my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
     my $internal_server_url = $grid_response->{internal_server_url}; # TODO: hack for regionservers behind a router
     # contact with Region server
-    my $session_id = &OpenUGAI::Utility::GenerateUUID;
-    my $secure_session_id = &OpenUGAI::Utility::GenerateUUID;
+    my $session_id = &OpenUGAI::Util::GenerateUUID;
+    my $secure_session_id = &OpenUGAI::Util::GenerateUUID;
     my $circuit_code = int(rand() * 1000000000); # just a random integer
-    my $caps_id = &OpenUGAI::Utility::GenerateUUID;
+    my $caps_id = &OpenUGAI::Util::GenerateUUID;
     my %region_request_params = (
 	session_id => $session_id,
 	secure_session_id => $secure_session_id,
@@ -218,10 +219,10 @@ sub _login_to_simulator {
 	user_server_url => "http://192.168.0.150/perl/trunk/user.cgi",
 	);
     # TODO: using $internal_server_url is a temporary solution
-    &OpenUGAI::Utility::Log("user", "expect_user", Data::Dump::dump(\%region_request_params));
+    &OpenUGAI::Util::Log("user", "expect_user", Data::Dump::dump(\%region_request_params));
     my $region_response = undef;
     eval {
-    	$region_response = &OpenUGAI::Utility::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
+    	$region_response = &OpenUGAI::Util::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
     };
     if ($@) {
 	return &_make_false_response("can not login", "failed to call expect_user: $@");
@@ -329,27 +330,27 @@ POSTDATA
     # TODO:
     my $res = undef;
     eval {
-    	$res = &OpenUGAI::Utility::HttpRequest("POST", $OpenUGAI::Global::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
+    	$res = &OpenUGAI::Util::HttpRequest("POST", $OpenUGAI::Global::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
     };
     if ($@) {
     	Carp::croak($@);
     }
-    my $res_obj = &OpenUGAI::Utility::XML2Obj($res);
+    my $res_obj = &OpenUGAI::Util::XML2Obj($res);
     
 #    if (!$res_obj->{InventoryFolderBase}) {
-#	&OpenUGAI::Utility::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);
+#	&OpenUGAI::Util::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);
 #	# Sleep(10000); # TODO: need not to do this
-#	$res = &OpenUGAI::Utility::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
-#	$res_obj = &OpenUGAI::Utility::XML2Obj($res);
+#	$res = &OpenUGAI::Util::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
+#	$res_obj = &OpenUGAI::Util::XML2Obj($res);
 #   }
     
     my $folders = $res_obj->{InventoryFolderBase};
     my $folders_count = @$folders;
     if ($folders_count > 0) {
 	my @AgentInventoryFolders = ();
-	my $root_uuid = &OpenUGAI::Utility::ZeroUUID();
+	my $root_uuid = &OpenUGAI::Util::ZeroUUID();
 	foreach my $folder (@$folders) {
-	    if ($folder->{ParentID}->{UUID} eq &OpenUGAI::Utility::ZeroUUID()) {
+	    if ($folder->{ParentID}->{UUID} eq &OpenUGAI::Util::ZeroUUID()) {
 		$root_uuid = $folder->{ID}->{UUID};
 	    }
 	    my %folder_hash = (
@@ -400,7 +401,7 @@ sub _convert_to_response {
 }
 
 # #################
-# Utility Functions
+# Util Functions
 sub _make_false_response {
     my ($reason, $message) = @_;
     return { reason => $reason, login => "false", message => $message };
@@ -465,13 +466,13 @@ sub OpenID_PRELogin {
 	region_handle => $user->{homeRegion},
 	authkey => undef
 	);
-    my $grid_response = &OpenUGAI::Utility::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
+    my $grid_response = &OpenUGAI::Util::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
     my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
     # contact with Region server
-    my $session_id = &OpenUGAI::Utility::GenerateUUID;
-    my $secure_session_id = &OpenUGAI::Utility::GenerateUUID;
+    my $session_id = &OpenUGAI::Util::GenerateUUID;
+    my $secure_session_id = &OpenUGAI::Util::GenerateUUID;
     my $circuit_code = int(rand() * 1000000000); # just a random integer
-    my $caps_id = &OpenUGAI::Utility::GenerateUUID;
+    my $caps_id = &OpenUGAI::Util::GenerateUUID;
     my %region_request_params = (
 	session_id => $session_id,
 	secure_session_id => $secure_session_id,
@@ -485,7 +486,7 @@ sub OpenID_PRELogin {
 	regionhandle => $user->{homeRegion},
 	caps_path => $caps_id,
 	);
-    my $region_response = &OpenUGAI::Utility::XMLRPCCall($region_server_url, "expect_user", \%region_request_params);
+    my $region_response = &OpenUGAI::Util::XMLRPCCall($region_server_url, "expect_user", \%region_request_params);
     # contact with Inventory server
     my $inventory_data = &_create_inventory_data($user->{UUID});
     # return to client

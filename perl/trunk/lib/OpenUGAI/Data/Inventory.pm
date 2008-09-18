@@ -2,7 +2,7 @@ package OpenUGAI::Data::Inventory;
 
 use strict;
 use OpenUGAI::DBData;
-use OpenUGAI::Utility;
+use OpenUGAI::Util;
 
 our %SQL = (
     save_inventory_folder =>
@@ -77,7 +77,7 @@ sub saveInventoryItem {
 
 sub getRootFolder {
     my $agent_id = shift;
-    my @args = ( &OpenUGAI::Utility::ZeroUUID(), $agent_id );
+    my @args = ( &OpenUGAI::Util::ZeroUUID(), $agent_id );
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_root_folder}, \@args);
     my $count = @$res;
     if ($count > 0) {

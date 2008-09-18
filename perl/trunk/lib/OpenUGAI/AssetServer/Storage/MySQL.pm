@@ -2,7 +2,7 @@ package OpenUGAI::AssetServer::Storage::MySQL;
 
 use strict;
 use DBHandler;
-use OpenUGAI::Config;
+use OpenUGAI::Global;
 
 our %SQL = (
     select_asset_by_uuid =>
@@ -24,19 +24,20 @@ our @ASSETS_COLUMNS = (
 sub new {
     my $this = shift;
     my %fields = (
-	Connection => &DBHandler::getConnection($OpenUGAI::Config::DSN,
-						$OpenUGAI::Config::DBUSER,
-						$OpenUGAI::Config::DBPASS);
+	Connection => &DBHandler::getConnection($OpenUGAI::Global::DSN,
+						$OpenUGAI::Global::DBUSER,
+						$OpenUGAI::Global::DBPASS),
 	);
-    return bless $this, \%fields;
+    return bless \%fields , $this;
 }
 
 sub getAsset {
     my ($this, $uuid) = @_;
     my $conn = $this->{Connection};
     my $result = undef;
+    my $sql = $SQL{select_asset_by_uuid};
     eval {
-	my $st = new DBHandler::Statement($conn, $SQL{select_asset_by_uuid});
+	my $st = new Statement($conn, $sql);
 	$result = $st->exec($uuid);
     };
     if ($@) {
@@ -59,8 +60,9 @@ sub saveAsset {
     }
     my $conn = $this->{Connection};
     my $result = undef;
+    my $sql = $SQL{insert_asset};
     eval {
-	my $st = new DBHandler::Statement($conn, $SQL{insert_asset});
+	my $st = new Statement($conn, $sql);
 	$result = $st->exec(@asset_args);
     };
     if ($@) {

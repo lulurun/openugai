@@ -3,10 +3,13 @@ package OpenUGAI::AssetServer::Storage;
 use Carp;
 use OpenUGAI::Global;
 
-our $singleton = undef;
+our $singleton;
+BEGIN {
+    $singleton = undef;
+}
 
 sub GetInstance {
-    return $singleton if ($singlton);
+    return $singleton if ($singleton);
     my $this = shift;
     if ($OpenUGAI::Global::AssetStorage eq "mysql") {
 	require OpenUGAI::AssetServer::Storage::MySQL;

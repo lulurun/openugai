@@ -2,7 +2,7 @@ package OpenUGAI::GridServer;
 
 use strict;
 use OpenUGAI::Global;
-use OpenUGAI::Utility;
+use OpenUGAI::Util;
 use OpenUGAI::Data::Regions;
 
 our $ValidateContactable = 0;
@@ -238,7 +238,7 @@ sub _map_block {
 # subs used by public methods
 sub getRegionHandle {
     my ($x, $y) = @_;
-    return &OpenUGAI::Utility::UIntsToLong(256*$x, 256*$y);
+    return &OpenUGAI::Util::UIntsToLong(256*$x, 256*$y);
 }
 
 sub ValidateNewRegionKeys {
@@ -261,7 +261,7 @@ sub ValidateRegionContactable {
     my $region_status_url = "http://" . $params->{sim_ip} . ":" . $params->{http_port} . "/simstatus/";
     my $res_contents = undef;
     eval {
-	$res_contents = &OpenUGAI::Utility::HttpRequest("GET", $region_status_url);
+	$res_contents = &OpenUGAI::Util::HttpRequest("GET", $region_status_url);
     };
     if ($@) {
 	Carp::croak($@);

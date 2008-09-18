@@ -2,7 +2,6 @@ package OpenUGAI::Data::Assets;
 
 use strict;
 use OpenUGAI::DBData;
-use OpenUGAI::Utility;
 
 our %SQL = (
     select_asset_by_uuid =>

@@ -2,7 +2,6 @@ package OpenUGAI::Data::Avatar;
 
 use strict;
 use OpenUGAI::DBData;
-use OpenUGAI::Utility;
 
 our %SQL = (
     get_avatar_appearance =>

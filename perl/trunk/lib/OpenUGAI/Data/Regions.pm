@@ -2,7 +2,6 @@ package OpenUGAI::Data::Regions;
 
 use strict;
 use OpenUGAI::DBData;
-use OpenUGAI::Utility;
 
 our %SQL = (
     select_region_by_uuid =>
