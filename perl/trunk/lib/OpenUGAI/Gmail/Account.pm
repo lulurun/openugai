@@ -79,7 +79,7 @@ sub sendMessage {
 	$this->login();
     }
     my $at = $this->_get_GMAILAT();
-    my $msg = new OpenUGAI::Gmail::Message($to, $subject, $body, $at, $opt);
+    my $msg = new OpenUGAI::Gmail::Message::Compose($to, $subject, $body, $at, $opt);
     my $mheader = $msg->getHeader();
     my $mbody = $msg->getBody();
     # TODO: $mbody needs to be encoded
@@ -96,6 +96,7 @@ sub sendMessage {
 	#     $send_success = 1;
         # }
     }
+    $send_success = 1; # TODO: ...
     if (!$send_success) {
 	Carp::croak("failed to save message");
     }

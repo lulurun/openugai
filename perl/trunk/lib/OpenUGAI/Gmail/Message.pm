@@ -57,6 +57,7 @@ sub ParseAttachments {
 
 sub new {
     my ($this, $di_obj) = @_;
+Data::Dump::dump $di_obj;
     my %fields = (
 		  m_id => $di_obj->[2],
 		  subject => $di_obj->[15],

@@ -1,6 +1,8 @@
 package OpenUGAI::AssetServer::Storage::MySQL;
 
 use strict;
+use MIME::Base64;
+use XML::Simple;
 use DBHandler;
 use OpenUGAI::Global;
 
@@ -46,14 +48,16 @@ sub getAsset {
     if ($result) {
 	my $count = @$result;
 	if ($count > 0) {
-	    return $result->[0];
+	    my $xml = &_asset_to_xml($result->[0]);
+	    return $xml;
 	}
     }
-    return undef;
+    return ""; # TODO: failed xml
 }
 
 sub saveAsset {
-    my ($this, $asset) = @_;
+    my ($this, $asset_xml) = @_;
+    my $asset = &_xml_to_asset($asset_xml);
     my @asset_args;
     foreach(@ASSETS_COLUMNS) {
 	push @asset_args, $asset->{$_};
@@ -70,5 +74,43 @@ sub saveAsset {
     }
     return $result;
 }
+
+# ##################
+# private functions
+sub _asset_to_xml {
+    my $asset = shift;
+    return "" if !$asset;
+    my $asset_data = &MIME::Base64::encode_base64($asset->{data});
+    return << "ASSET_XML";
+<AssetBase>
+    <Data>$asset_data</Data>
+    <FullID>
+        <UUID>$asset->{id}</UUID>
+    </FullID>
+    <Type>$asset->{assetType}</Type>
+    <Name>$asset->{name}</Name>
+    <Description>$asset->{description}</Description>
+    <Local>$asset->{local}</Local>
+    <Temporary>$asset->{temporary}</Temporary>
+</AssetBase>
+ASSET_XML
+}
+
+sub _xml_to_asset {
+    my $xml = shift;
+    my $xs = new XML::Simple();
+    my $obj = $xs->XMLin($xml);
+    my %asset = (
+	"id" => $obj->{FullID}->{UUID},
+	"name" => $obj->{Name},
+	"description" => $obj->{Description},
+	"assetType" => $obj->{Type},
+	"local" => $obj->{Local},
+	"temporary" => $obj->{Temporary},
+	"data" => &MIME::Base64::decode_base64($obj->{Data}),
+	);
+    return \%asset;
+}
+
 
 1;

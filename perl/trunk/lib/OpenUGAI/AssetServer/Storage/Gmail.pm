@@ -2,13 +2,7 @@ package OpenUGAI::AssetServer::Storage::Gmail;
 
 use strict;
 use OpenUGAI::Global;
-
-our %SQL = (
-    select_asset_by_uuid =>
-    "SELECT * FROM assets WHERE id=?",
-    insert_asset =>
-    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)"
-    );
+use OpenUGAI::Gmail::Account;
 
 our @ASSETS_COLUMNS = (
     "name",
@@ -20,12 +14,21 @@ our @ASSETS_COLUMNS = (
     "id",
     );
 
+our $GMAIL_ACCOUNT = "luluasset";
+our $GMAIL_PASSWORD = "1u1u\@sset";
+
 sub new {
     my $this = shift;
+    my $ga = new OpenUGAI::Gmail::Account($GMAIL_ACCOUNT, $GMAIL_PASSWORD);
+    $ga->login();
+    my $draft_list = $ga->getMessage( {folder => "draft"} );
+    my %asset_list = ();
+    foreach (@$draft_list) {
+	$asset_list{$_->{subject}} = $_->{m_id};
+    }
     my %fields = (
-	Connection => &DBHandler::getConnection($OpenUGAI::Global::DSN,
-						$OpenUGAI::Global::DBUSER,
-						$OpenUGAI::Global::DBPASS),
+		  Connection => $ga,
+		  AssetList => \%asset_list,
 	);
     return bless \%fields , $this;
 }
@@ -33,41 +36,33 @@ sub new {
 sub getAsset {
     my ($this, $uuid) = @_;
     my $conn = $this->{Connection};
-    my $result = undef;
-    my $sql = $SQL{select_asset_by_uuid};
+    Carp::croak("can not find asset $uuid") if ( !($this->{AssetList}->{$uuid}) );
+    my $m_id = $this->{AssetList}->{$uuid};
+    my %att_args = (
+		    a_id => "0.1", # TODO: fix me !!
+		    m_id => $m_id,
+		    );
+    my $asset_text = undef;
     eval {
-	my $st = new Statement($conn, $sql);
-	$result = $st->exec($uuid);
+	$asset_text = $gacc->getAttachment(\%att_args);
     };
     if ($@) {
-	Carp::croak("MySQL statement failed: $sql -> " . $@);	
+	Carp::croak("can not get asset $uuid: $@");	
     }
-    if ($result) {
-	my $count = @$result;
-	if ($count > 0) {
-	    return $result->[0];
-	}
-    }
-    return undef;
+    my $asset = "";
+    my $get_asset = "\$asset = " . $asset_text;
+    eval {
+	\$get_asset;
+    };
+    return $asset;
 }
 
 sub saveAsset {
-    my ($this, $asset) = @_;
-    my @asset_args;
-    foreach(@ASSETS_COLUMNS) {
-	push @asset_args, $asset->{$_};
-    }
+    my ($this, $asset_xml) = @_;
     my $conn = $this->{Connection};
-    my $result = undef;
-    my $sql = $SQL{insert_asset};
-    eval {
-	my $st = new Statement($conn, $sql);
-	$result = $st->exec(@asset_args);
-    };
-    if ($@) {
-	Carp::croak("MySQL statement failed: $sql -> " . $@);	
-    }
+    $conn->sendMessage($GMAIL_ACCOUNT . "\@gmail.com", $asset->{id}, $asset_xml);
     return $result;
 }
 
 1;
+
