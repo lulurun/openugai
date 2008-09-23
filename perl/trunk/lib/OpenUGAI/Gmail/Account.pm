@@ -22,11 +22,12 @@ sub new {
     my $ua = new LWP::UserAgent( agent => $USER_AGENT, keep_alive => 1 );
     $ua->cookie_jar( {file => $COOKIE_CACHE, auto_save => 1} );
     $ua->timeout($TIMEOUT);
+    $ua->parse_head(0); # ref. http://slashdot.jp/~mumumu/journal/370947
 
     my %fields = (
 		  name => $name,
 		  passwd => $pass,
-		  login => 0,
+		  _login => 0,
 		  _ua => $ua,
 		  );
 
@@ -35,7 +36,7 @@ sub new {
 
 sub login {
     my $this = shift;
-    return if ($this->{login});
+    return if ($this->{_login});
     my $req = HTTP::Request->new( POST => $GMAIL_URL_LOGIN);
     $req->content_type( "application/x-www-form-urlencoded" );
     my %postdata = (
@@ -54,13 +55,12 @@ sub login {
     } else {
 	Carp::croak("can not login, check your name and password, or ask wolfdrawer to ask lulurun to update me");
     }
-    $this->{login} = 1;
+    $this->{_login} = 1;
 }
 
 sub _get_GMAILAT {
     my $this = shift;
     my $cookie_jar = $this->{_ua}->cookie_jar();
-    # print Data::Dump::dump($cookie_jar) . "\n\n";
     # TODO @@@ is there any other way ?
     my $at_string = "";
     eval {
@@ -75,6 +75,9 @@ sub _get_GMAILAT {
 
 sub sendMessage {
     my ($this, $to, $subject, $body, $opt) = @_;
+    if (!$this->{_login}) {
+	$this->login();
+    }
     my $at = $this->_get_GMAILAT();
     my $msg = new OpenUGAI::Gmail::Message($to, $subject, $body, $at, $opt);
     my $mheader = $msg->getHeader();
@@ -98,7 +101,34 @@ sub sendMessage {
     }
 }
 
-sub readMessage {
+sub getMessage {
+    my ($this, $opt) = @_;
+    my $messages = undef;
+    if ($opt->{msg_id}) {
+	my %query_data = (
+			  start => $opt->{start} || 0,
+			  search => "query",
+			  q => "in:anywhere",
+			  th => $opt->{msg_id},
+			  view => "cv",
+			  );
+	my $query_url = $GMAIL_URL_GMAIL . &_make_req_string(\%query_data);
+	my $req = HTTP::Request->new("GET", $query_url);
+	my $pagedata = $this->_request_page($req);
+	$messages = OpenUGAI::Gmail::Message::Single::ParseMailPage($pagedata);	
+    } elsif ($opt->{folder}) {
+	my %query_data = (
+			  start => $opt->{start} || 0,
+			  search => $opt->{folder},
+			  view => "tl",
+			  );
+	my $query_url = $GMAIL_URL_GMAIL . &_make_req_string(\%query_data);
+	my $req = HTTP::Request->new("GET", $query_url);
+	my $pagedata = $this->_request_page($req);
+	$messages = OpenUGAI::Gmail::Message::List::ParseMailListPage($pagedata);
+    } elsif ($opt->{label}) {
+    }
+    return $messages;
 }
 
 sub _request_page {
@@ -134,5 +164,6 @@ sub _url_decode($) {
     $str =~ s/%([0-9A-Fa-f][0-9A-Fa-f])/pack('H2', $1)/eg;
     return $str;
 }
+
 1;
 
