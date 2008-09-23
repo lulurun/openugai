@@ -115,7 +115,7 @@ sub getMessage {
 	my $query_url = $GMAIL_URL_GMAIL . &_make_req_string(\%query_data);
 	my $req = HTTP::Request->new("GET", $query_url);
 	my $pagedata = $this->_request_page($req);
-	$messages = OpenUGAI::Gmail::Message::Single::ParseMailPage($pagedata);	
+	$messages = OpenUGAI::Gmail::Message::ParseMailPage($pagedata);	
     } elsif ($opt->{folder}) {
 	my %query_data = (
 			  start => $opt->{start} || 0,
@@ -125,10 +125,25 @@ sub getMessage {
 	my $query_url = $GMAIL_URL_GMAIL . &_make_req_string(\%query_data);
 	my $req = HTTP::Request->new("GET", $query_url);
 	my $pagedata = $this->_request_page($req);
-	$messages = OpenUGAI::Gmail::Message::List::ParseMailListPage($pagedata);
+	$messages = OpenUGAI::Gmail::Message::ParseMailListPage($pagedata);
     } elsif ($opt->{label}) {
     }
     return $messages;
+}
+
+sub getAttachment {
+    my ($this, $opt) = @_;
+    Data::Dump::dump($opt);
+    my %query_data = (
+		      attid => $opt->{a_id},
+		      th => $opt->{m_id},
+		      view => "att",
+		      );
+    my $query_url = $GMAIL_URL_GMAIL . &_make_req_string(\%query_data);
+    my $req = HTTP::Request->new("GET", $query_url);
+    my $pagedata = $this->_request_page($req);
+    print $pagedata . "\n\n";
+#    $messages = OpenUGAI::Gmail::Message::ParseMailPage($pagedata);	
 }
 
 sub _request_page {

@@ -7,7 +7,6 @@ use HTML::TokeParser;
 
 sub ParseMailPage {
     my $html_string = shift;
-    print $html_string . "\n\n";
     my $p = new HTML::TokeParser(\$html_string);
     my $page_script = "";
     while ( my $token = $p->get_tag("script") ) {
@@ -47,15 +46,48 @@ sub ParseMailListPage {
 
 package OpenUGAI::Gmail::Message::Detail;
 
+sub ParseAttachments {
+    my ($att_objs) = @_;
+    my @attachments = ();
+    foreach (@$att_objs) {
+	push @attachments, new OpenUGAI::Gmail::Message::Attachment($_);
+    }
+    return \@attachments;
+}
+
 sub new {
-    my ($this, $gmail_obj) = @_;
+    my ($this, $di_obj) = @_;
     my %fields = (
-		  to => $gmail_obj->{to},
-		  from => $gmail_obj->{from},
-		  subject => $gmail_obj->{subject},
-		  body => $gmail_obj->{body},
-		  datetime => $gmail_obj->{datetime},
-		  attachments => $gmail_obj->{attachments},
+		  m_id => $di_obj->[2],
+		  subject => $di_obj->[15],
+		  attachments => ParseAttachments($di_obj->[17]),
+		  );
+    bless \%fields, $this;
+}
+
+sub getAttInfo {
+    my ($this, $idx) = @_;
+    my $att = undef;
+    eval {
+	$att = $this->{attachments}->[$idx];
+    };
+    if ($@) {
+	; # can not get attachment
+    }
+    return $att;
+}
+
+package OpenUGAI::Gmail::Message::Attachment;
+
+sub new {
+    my ($this, $att_obj) = @_;
+    my %fields = (
+		  a_id => $_->[0],
+		  filename => $_->[1],
+		  mimetype => $_->[2],
+		  filesize => $_->[3],
+		  uk1 => $_->[4],
+		  uk2 => $_->[5],
 		  );
     bless \%fields, $this;
 }
