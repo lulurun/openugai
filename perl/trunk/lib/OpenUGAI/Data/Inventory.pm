@@ -113,8 +113,8 @@ sub deleteInventoryItem {
 sub moveInventoryFolder {
     my $info = shift;
     my @args = (
-	$info->{ParentID}->{UUID}, # TODO: not good
-	$info->{ID}->{UUID}, # TODO: not good UUID should be extracted in the higher level
+	$info->{ParentID}->{Guid}, # TODO: not good
+	$info->{ID}->{Guid}, # TODO: not good UUID should be extracted in the higher level
 	);
     &OpenUGAI::DBData::getSimpleResult($SQL{move_inventory_folder}, \@args);
 }

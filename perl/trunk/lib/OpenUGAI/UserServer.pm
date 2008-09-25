@@ -350,15 +350,15 @@ POSTDATA
 	my @AgentInventoryFolders = ();
 	my $root_uuid = &OpenUGAI::Util::ZeroUUID();
 	foreach my $folder (@$folders) {
-	    if ($folder->{ParentID}->{UUID} eq &OpenUGAI::Util::ZeroUUID()) {
-		$root_uuid = $folder->{ID}->{UUID};
+	    if ($folder->{ParentID}->{Guid} eq &OpenUGAI::Util::ZeroUUID()) {
+		$root_uuid = $folder->{ID}->{Guid};
 	    }
 	    my %folder_hash = (
 		name => $folder->{Name},
-		parent_id => $folder->{ParentID}->{UUID},
+		parent_id => $folder->{ParentID}->{Guid},
 		version => $folder->{Version},
 		type_default => $folder->{Type},
-		folder_id => $folder->{ID}->{UUID},
+		folder_id => $folder->{ID}->{Guid},
 		);
 	    push @AgentInventoryFolders, \%folder_hash;
 	}

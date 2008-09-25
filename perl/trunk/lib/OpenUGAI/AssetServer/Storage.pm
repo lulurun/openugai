@@ -4,9 +4,6 @@ use Carp;
 use OpenUGAI::Global;
 
 our $singleton;
-BEGIN {
-    $singleton = undef;
-}
 
 sub GetInstance {
     return $singleton if ($singleton);

@@ -116,6 +116,7 @@ sub getMessage {
 	my $query_url = $GMAIL_URL_GMAIL . &_make_req_string(\%query_data);
 	my $req = HTTP::Request->new("GET", $query_url);
 	my $pagedata = $this->_request_page($req);
+	# TODO: not message"s"
 	$messages = OpenUGAI::Gmail::Message::ParseMailPage($pagedata);	
     } elsif ($opt->{folder}) {
 	my %query_data = (

@@ -14,7 +14,7 @@ my $param = &MyCGI::getParam();
 my $response = "<ERROR />";
 if ($ENV{REQUEST_METHOD} eq "POST") {
 	my $request = $param->{'POSTDATA'};
-	&OpenUGAI::Util::Log("asset", "request", $ENV{REQUEST_URI}, $request);
+#	&OpenUGAI::Util::Log("asset", "request", $ENV{REQUEST_URI}, $request);
 	$response = &OpenUGAI::AssetServer::saveAsset($request);
 } else { # get
 	eval {
@@ -30,7 +30,7 @@ if ($ENV{REQUEST_METHOD} eq "POST") {
 		$response = "<ERROR>$@</ERROR>"; # TODO: better return message needed.
 	}
 }
-&OpenUGAI::Util::Log("asset", "response", $response);
+#&OpenUGAI::Util::Log("asset", "response", $response);
 &MyCGI::outputXml("utf-8", $response);
 
 sub getRestParam {

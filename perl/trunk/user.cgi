@@ -4,7 +4,7 @@ use strict;
 use Carp;
 use MyCGI;
 use Template;
-use OpenUGAI::Utility;
+use OpenUGAI::Util;
 use OpenUGAI::UserServer;
 use Data::Dump;
 require "config.pl";
@@ -26,7 +26,7 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
 	    &MyCGI::outputHtml("utf-8", &login_form($param, "wrong password"));
 	} else {
 	    my $redirect_url = &create_client_login_trigger($param, $auth_key); 
-	    &OpenUGAI::Utility::Log("user", "redirect", $redirect_url);
+	    &OpenUGAI::Util::Log("user", "redirect", $redirect_url);
 	    &MyCGI::redirect($redirect_url);
 	}
     } else {
@@ -37,10 +37,10 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
     if (!$postdata) {
 	&MyCGI::outputHtml("utf-8", "");
     } else {
-	&OpenUGAI::Utility::Log("user", "request", $postdata);
+	&OpenUGAI::Util::Log("user", "request", $postdata);
 	my $xmlrpc = new XML::RPC();
 	my $response = $xmlrpc->receive($postdata, \&XMLRPCHandler);
-	&OpenUGAI::Utility::Log("user", "response", Data::Dump::dump($response));
+	&OpenUGAI::Util::Log("user", "response", Data::Dump::dump($response));
 	&MyCGI::outputXml("utf-8", $response);
     }
 }

@@ -62,6 +62,7 @@ Data::Dump::dump $di_obj;
 		  m_id => $di_obj->[2],
 		  subject => $di_obj->[15],
 		  attachments => ParseAttachments($di_obj->[17]),
+		  body => $di_obj->[20],
 		  );
     bless \%fields, $this;
 }

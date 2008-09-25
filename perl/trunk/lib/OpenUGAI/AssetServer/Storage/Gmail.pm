@@ -3,25 +3,22 @@ package OpenUGAI::AssetServer::Storage::Gmail;
 use strict;
 use OpenUGAI::Global;
 use OpenUGAI::Gmail::Account;
-
-our @ASSETS_COLUMNS = (
-    "name",
-    "description",
-    "assetType",
-    "local",
-    "temporary",
-    "data",
-    "id",
-    );
+use OpenUGAI::Util;
+use XML::Simple;
 
 our $GMAIL_ACCOUNT = "luluasset";
 our $GMAIL_PASSWORD = "1u1u\@sset";
+our $ASSET_FOLDER = "drafts";
+
 
 sub new {
     my $this = shift;
+    &OpenUGAI::Util::Log("startup", "AssetServer::Gmail", "startup ... $$");
     my $ga = new OpenUGAI::Gmail::Account($GMAIL_ACCOUNT, $GMAIL_PASSWORD);
+    &OpenUGAI::Util::Log("startup", "AssetServer::Gmail", "create ga $$");
     $ga->login();
-    my $draft_list = $ga->getMessage( {folder => "draft"} );
+    &OpenUGAI::Util::Log("startup", "AssetServer::Gmail", "login success $$");
+    my $draft_list = $ga->getMessage( {folder => $ASSET_FOLDER} );
     my %asset_list = ();
     foreach (@$draft_list) {
 	$asset_list{$_->{subject}} = $_->{m_id};
@@ -30,6 +27,7 @@ sub new {
 		  Connection => $ga,
 		  AssetList => \%asset_list,
 	);
+    &OpenUGAI::Util::Log("startup", "AssetServer::Gmail", "initialized $$");
     return bless \%fields , $this;
 }
 
@@ -38,30 +36,25 @@ sub getAsset {
     my $conn = $this->{Connection};
     Carp::croak("can not find asset $uuid") if ( !($this->{AssetList}->{$uuid}) );
     my $m_id = $this->{AssetList}->{$uuid};
-    my %att_args = (
-		    a_id => "0.1", # TODO: fix me !!
-		    m_id => $m_id,
-		    );
-    my $asset_text = undef;
-    eval {
-	$asset_text = $gacc->getAttachment(\%att_args);
-    };
-    if ($@) {
-	Carp::croak("can not get asset $uuid: $@");	
-    }
-    my $asset = "";
-    my $get_asset = "\$asset = " . $asset_text;
-    eval {
-	\$get_asset;
-    };
-    return $asset;
+    my $draft_mail = $conn->getMessage( {folder => "draft", msg_id => $m_id } );
+    my $asset_xml = $draft_mail->{body};
+    return $asset_xml;
 }
 
 sub saveAsset {
     my ($this, $asset_xml) = @_;
     my $conn = $this->{Connection};
-    $conn->sendMessage($GMAIL_ACCOUNT . "\@gmail.com", $asset->{id}, $asset_xml);
-    return $result;
+    my $asset_id = &_get_asset_id($asset_xml);
+    $conn->sendMessage($GMAIL_ACCOUNT . "\@gmail.com", $asset_id, $asset_xml);
+    return;
+}
+
+sub _get_asset_id {
+    my $xml = shift;
+    if ($xml =~ /<ID>([^<]+)<\/ID>/) {
+	return $1;
+    }
+    Carp::croak("can not get asset id: unknown asset format");
 }
 
 1;

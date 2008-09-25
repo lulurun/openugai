@@ -79,11 +79,13 @@ POSTDATA
 sub _get_inventory {
 	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $uuid = shift;
-	my $serializer = new XML::Serializer($uuid, "guid");
+	my %req_obj = (
+	    SessionID => "e5aabad0-8b15-11dd-be05-b8697d69d33a",
+	    AvatarID => "948b1022-ff13-4519-82d0-9177ab1d9dd9",
+	    Body => "948b1022-ff13-4519-82d0-9177ab1d9dd9",
+	);
+	my $serializer = new XML::Serializer("RestSessionObjectOfGuid", \%req_obj);
 	my $post_data = $serializer->to_string(XML::Serializer::WITH_HEADER);
-	if (&_apache_flag($url)) {
-		$post_data = "POSTDATA=" . $post_data;
-	}
 	my $res = &OpenUGAI::Util::HttpRequest("POST", $url . "/GetInventory/", $post_data) . "\n";
 	return $res;
 }
@@ -91,11 +93,8 @@ sub _get_inventory {
 sub _create_inventory {
 	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $uuid = shift;
-	my $serializer = new XML::Serializer($uuid, "guid");
+	my $serializer = new XML::Serializer("guid", $uuid);
 	my $post_data = $serializer->to_string(XML::Serializer::WITH_HEADER);
-	if (&_apache_flag($url)) {
-		$post_data = "POSTDATA=" . $post_data;
-	}
 	my $res = &OpenUGAI::Util::HttpRequest("POST", $url . "/CreateInventory/", $post_data) . "\n";
 	return 1;
 }
@@ -103,13 +102,11 @@ sub _create_inventory {
 sub _root_folders {
 	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $uuid = shift;
-	my $serializer = new XML::Serializer($uuid, "guid");
+	my $serializer = new XML::Serializer("guid", $uuid);
 	my $post_data = $serializer->to_string(XML::Serializer::WITH_HEADER);
-	if (&_apache_flag($url)) {
-		$post_data = "POSTDATA=" . $post_data;
-	}
+	print $post_data . "\n\n";
 	my $res = &OpenUGAI::Util::HttpRequest("POST", $url . "/RootFolders/", $post_data) . "\n";
-	return 1;
+	return $res;
 }
 
 1;

@@ -4,16 +4,16 @@ use strict;
 use Carp;
 use XML::RPC;
 use MyCGI;
-use OpenUGAI::Utility;
+use OpenUGAI::Util;
 use OpenUGAI::GridServer;
 require "config.pl";
 
 my $param = &MyCGI::getParam();
 my $request = $param->{'POSTDATA'};
-&OpenUGAI::Utility::Log("grid", "request", $request);
+&OpenUGAI::Util::Log("grid", "request", $request);
 my $xmlrpc = new XML::RPC();
 my $response = $xmlrpc->receive($request, \&XMLRPCHandler);
-&OpenUGAI::Utility::Log("grid", "response", $response);
+&OpenUGAI::Util::Log("grid", "response", $response);
 &MyCGI::outputXml("utf-8", $response);
 
 sub XMLRPCHandler {

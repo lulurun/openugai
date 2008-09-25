@@ -75,12 +75,12 @@ sub XML2Obj {
 }
 
 sub Log {
-	my $server_name = shift;
-	my @param = @_;
+    my $server_name = shift;
+    my @param = @_;
     open(FILE, ">>" . $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log");
-	foreach(@param) {
+    foreach(@param) {
     	print FILE $_ . "\n";
-	}
+    }
     print FILE "<<<<<<<<<<<=====================\n\n";
     close(FILE);
 }

@@ -25,15 +25,15 @@ my $gacc = new OpenUGAI::Gmail::Account("luluasset", "1u1u\@sset");
 $gacc->login();
 print "login success\n\n";
 
-&send_mail();
-print "send mail: gmail_test\n\n";
+#&send_mail();
+#print "send mail: gmail_test\n\n";
 
 my $mail_list = &get_mail_list();
 print "get mail contents ...\n\n";
 
-foreach (@$mail_list) {
-    &get_mail($_->{m_id});
-}
+#foreach (@$mail_list) {
+#    &get_mail($_->{m_id});
+#}
 print "done.\n\n";
 
 # ######################

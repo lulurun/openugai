@@ -5,6 +5,7 @@ use MIME::Base64;
 use XML::Simple;
 use DBHandler;
 use OpenUGAI::Global;
+use OpenUGAI::Util;
 
 our %SQL = (
     select_asset_by_uuid =>
@@ -30,6 +31,7 @@ sub new {
 						$OpenUGAI::Global::DBUSER,
 						$OpenUGAI::Global::DBPASS),
 	);
+    &OpenUGAI::Util::Log("startup", "AssetServer::MySQL", "initialized");
     return bless \%fields , $this;
 }
 
@@ -85,7 +87,7 @@ sub _asset_to_xml {
 <AssetBase>
     <Data>$asset_data</Data>
     <FullID>
-        <UUID>$asset->{id}</UUID>
+        <Guid>$asset->{id}</Guid>
     </FullID>
     <Type>$asset->{assetType}</Type>
     <Name>$asset->{name}</Name>

@@ -12,7 +12,7 @@ our $ASSET_SERVER_URL = "http://openugai.work.lulu/perl/trunk/asset.cgi";
 our $ASSET_RECV_KEY = "null";
 our $ASSET_SEND_KEY = "null";
 
-our $AssetStorage = "mysql";
+our $AssetStorage = "gmail";
 
 # USER
 #our $USER_SERVER_URL = "http://127.0.0.1:8001/";

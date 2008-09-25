@@ -3,6 +3,7 @@
 use strict;
 use MyCGI;
 use OpenUGAI::InventoryServer;
+use OpenUGAI::Util;
 use Carp;
 require "config.pl";
 
@@ -15,7 +16,7 @@ if ($request_uri =~ /([^\/]+)\/$/) {
 }
 my $param = &MyCGI::getParam();
 my $post_data = $param->{'POSTDATA'};
-&OpenUGAI::Utility::Log("inventory", "request", $request_uri, $post_data);
+&OpenUGAI::Util::Log("inventory", "request", $request_uri, $post_data);
 my $response = "";
 eval {
     $response = &handleRequest($request_method, $post_data);
@@ -23,7 +24,7 @@ eval {
 if ($@) {
     $response = "<ERROR>$@</ERROR>";
 }
-&OpenUGAI::Utility::Log("inventory", "response", $response);
+&OpenUGAI::Util::Log("inventory", "response", $response);
 &MyCGI::outputXml("utf-8", $response);
 
 sub handleRequest {

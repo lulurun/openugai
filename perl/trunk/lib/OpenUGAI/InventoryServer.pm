@@ -45,10 +45,10 @@ sub _get_inventory {
     my $response_obj = { # TODO much duplicated data ***
 	_folders => { InventoryFolderBase => \@response_folders },
 	_allItems => { InventoryItemBase => \@response_items },
-	_userID => { UUID => $uuid },
+	_userID => { Guid => $uuid },
 	Folders => { InventoryFolderBase => \@response_folders },
 	AllItems => { InventoryItemBase => \@response_items },
-	UserID => { UUID => $uuid },
+	UserID => { Guid => $uuid },
 	Items => { InventoryItemBase => \@response_items },
     };
     my $serializer = new XML::Serializer( $response_obj, "InventoryCollection");
@@ -107,7 +107,7 @@ sub _delete_item {
     my $post_data = shift;
     my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
     my $item = $request_obj->{Body};
-    my $item_id = $item->{ID}->{UUID};
+    my $item_id = $item->{ID}->{Guid};
     &OpenUGAI::Data::Inventory::deleteInventoryItem($item_id);
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
@@ -140,14 +140,14 @@ sub _root_folders {
 sub _convert_to_db_item {
     my $item = shift;
     my $ret = {
-	assetID => $item->{AssetID}->{UUID},
+	assetID => $item->{AssetID}->{Guid},
 	assetType => $item->{AssetType},
 	inventoryName => $item->{Name},
 	inventoryDescription => ref($item->{Description}) ? "" : $item->{Description},
 	inventoryNextPermissions => $item->{NextPermissions},
 	inventoryCurrentPermissions => $item->{CurrentPermissions},
 	invType => $item->{InvType},
-	creatorID => $item->{Creator}->{UUID},
+	creatorID => $item->{Creator}->{Guid},
 	inventoryBasePermissions => $item->{BasePermissions} || 0,
 	inventoryEveryOnePermissions => $item->{EveryOnePermissions} || 0,
 	"salePrice" => 0,
@@ -156,9 +156,9 @@ sub _convert_to_db_item {
 	"groupID" => "00000000-0000-0000-0000-000000000000",
 	"groupOwned" => 0,
 	"flags" => 0,
-	inventoryID => $item->{ID}->{UUID}, # TODO @@@ this can not be null
-	avatarID => $item->{Owner}->{UUID},
-	parentFolderID => $item->{Folder}->{UUID},
+	inventoryID => $item->{ID}->{Guid}, # TODO @@@ this can not be null
+	avatarID => $item->{Owner}->{Guid},
+	parentFolderID => $item->{Folder}->{Guid},
     };
     return $ret;
 }
@@ -166,13 +166,13 @@ sub _convert_to_db_item {
 sub _convert_to_response_item {
     my $item = shift;
     my $ret = {
-	ID => { UUID => $item->{inventoryID} },
-	AssetID => { UUID => $item->{assetID} },
+	ID => { Guid => $item->{inventoryID} },
+	AssetID => { Guid => $item->{assetID} },
 	AssetType => $item->{assetType},
 	InvType => $item->{invType},
-	Folder => { UUID => $item->{parentFolderID} },
-	Owner => { UUID => $item->{avatarID} },
-	Creator => { UUID => $item->{creatorID} },
+	Folder => { Guid => $item->{parentFolderID} },
+	Owner => { Guid => $item->{avatarID} },
+	Creator => { Guid => $item->{creatorID} },
 	Name => $item->{inventoryName},
 	Description => $item->{inventoryDescription} || "",
 	NextPermissions => $item->{inventoryNextPermissions},
@@ -187,9 +187,9 @@ sub _convert_to_db_folder {
     my $folder = shift;
     my $ret = {
 	folderName => $folder->{Name},
-	agentID => $folder->{Owner}->{UUID},
-	parentFolderID => $folder->{ParentID}->{UUID},
-	folderID => $folder->{ID}->{UUID},
+	agentID => $folder->{Owner}->{Guid},
+	parentFolderID => $folder->{ParentID}->{Guid},
+	folderID => $folder->{ID}->{Guid},
 	type => $folder->{Type},
 	version => $folder->{Version},
     };
@@ -200,9 +200,9 @@ sub _convert_to_response_folder {
     my $folder = shift;
     my $ret = {
 	Name => $folder->{folderName},
-	Owner => { UUID => $folder->{agentID} },
-	ParentID => { UUID => $folder->{parentFolderID} },
-	ID => { UUID => $folder->{folderID} },
+	Owner => { Guid => $folder->{agentID} },
+	ParentID => { Guid => $folder->{parentFolderID} },
+	ID => { Guid => $folder->{folderID} },
 	Type => $folder->{type},
 	Version => $folder->{version},
     };
@@ -213,9 +213,9 @@ sub __create_folder_struct {
     my ($id, $owner, $parentid, $name, $type, $version) = @_;
     return {
 	"Name" => $name,
-	"Owner" => { UUID => $owner },
-	"ParentID" => { UUID => $parentid },
-	"ID" => { UUID => $id },
+	"Owner" => { Guid => $owner },
+	"ParentID" => { Guid => $parentid },
+	"ID" => { Guid => $id },
 	"Type" => $type,
 	"Version" => $version,
     };
