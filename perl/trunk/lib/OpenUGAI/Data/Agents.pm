@@ -7,7 +7,7 @@ my %SQL = (
     select_agent_by_uuid =>
     "select * from agents where UUID=?",
     update_agent =>
-    "REPLACE INTO agents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "REPLACE INTO agents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     update_agent_current_region =>
     "update agents set currentHandle=?, currentRegion=? where UUID=?",
     agent_logon =>
@@ -32,7 +32,7 @@ my @AGENTS_COLUMNS = (
     "currentRegion",
     "currentHandle",
     "currentPos",
-#    "currentPos",
+    "currentLookAt",
     );
 
 sub SelectAgent {

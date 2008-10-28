@@ -2,7 +2,7 @@
 
 use OpenUGAI::Global;
 
-my $base_url = "http://openugai.wolfdrawer.net/perl/trunk";
+my $base_url = "http://10.0.0.82:8009/perl/trunk";
 my $base_path = "/srv/www/openugai";
 
 # grid services
@@ -17,9 +17,12 @@ $OpenUGAI::Global::TMPLDIR = $base_path . "/perl/trunk/template";
 $OpenUGAI::Global::LOGINKEYDIR = $base_path . "/perl/trunk/loginkey";
 
 # db settings
-$OpenUGAI::Global::DSN = "dbi:mysql:openugai;host=localhost;";
+$OpenUGAI::Global::DSN = "dbi:mysql:openugai;host=10.0.0.83;";
 $OpenUGAI::Global::DBUSER = "opensim";
 $OpenUGAI::Global::DBPASS = "opensim";
+
+# ##########
+$OpenUGAI::Global::AssetStorage = "mysql";
 
 1;
 

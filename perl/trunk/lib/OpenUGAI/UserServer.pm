@@ -168,6 +168,7 @@ sub _login_to_simulator {
     # get start region / location
     my $region_handle;
     my @start_location;
+    my @start_lookat;
     if ($params->{start} eq "last") {
 	if ($agent->{currentHandle}) {
 	    $region_handle = $agent->{currentHandle};
@@ -179,13 +180,20 @@ sub _login_to_simulator {
 	} else {
 	    @start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
 	}
+	if ($agent->{currentLookAt} =~ /<([\d\.]+),([\d\.]+),([\d\.]+)>/) {
+	    @start_lookat = ($1, $2, $3);
+	} else {
+	    @start_lookat = ($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ});
+	}
     } elsif ($params->{start} eq "home") {
 	$region_handle = $user->{homeRegion};
 	@start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
+	@start_lookat = ($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ});
     } else {
 	# url login; # TODO @@@ parse opensim url
 	$region_handle = $user->{homeRegion};
 	@start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
+	@start_lookat = ($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ});
     }
     # contact with Grid server
     my %grid_request_params = (
@@ -216,10 +224,11 @@ sub _login_to_simulator {
 	startpos_z => $start_location[2],
 	regionhandle => $region_handle,
 	caps_path => $caps_id,
-	user_server_url => "http://192.168.0.150/perl/trunk/user.cgi",
+	user_server_url => "http://192.168.0.150/perl/trunk/user.cgi", # TODO: @@@ read from config
 	);
     # TODO: using $internal_server_url is a temporary solution
     &OpenUGAI::Util::Log("user", "expect_user", Data::Dump::dump(\%region_request_params));
+    &OpenUGAI::Util::Log("user", "internal_server", $internal_server_url);
     my $region_response = undef;
     eval {
     	$region_response = &OpenUGAI::Util::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
@@ -235,6 +244,7 @@ sub _login_to_simulator {
     $agent->{currentRegion} = $grid_response->{region_UUID};
     $agent->{currentHandle} = $grid_response->{regionHandle};
     $agent->{currentPos} = "<$start_location[0],$start_location[1],$start_location[2]>";
+    $agent->{currentLookAt} = "<$start_lookat[0],$start_lookat[1],$start_lookat[2]>";
     $agent->{agentOnline} = 1;
     $agent->{logoutTime} = 0;
     $agent->{agentIP} = "";  # TODO @@@ 
@@ -266,11 +276,11 @@ sub _login_to_simulator {
 	message => "Do you fear the wolf ?",
 	seconds_since_epoch => time,
 	seed_capability => $region_server_url . "/CAPS/" . $caps_id . "0000/", # https://sim2734.agni.lindenlab.com:12043/cap/61d6d8a0-2098-7eb4-2989-76265d80e9b6
-	look_at => &_make_r_string($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ}),
+	look_at => &_make_r_string($start_lookat[0], $start_lookat[1], $start_lookat[2]),
 	home => &_make_home_string(
 	    [ $grid_response->{region_locx} * 256, $grid_response->{region_locy} * 256 ],
 	    [ $start_location[0], $start_location[1], $start_location[2] ],
-	    [ $user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ} ]), # TODO @@@ last lookat
+	    [ $start_lookat[0], $start_lookat[1], $start_lookat[2] ]),
 	"inventory-skeleton" => $inventory_data->{InventoryArray},
 	"inventory-root" => [ { folder_id => $inventory_data->{RootFolderID} } ],
 	"event_notifications" => \@OpenUGAI::UserServer::Config::event_notifications,
