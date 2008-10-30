@@ -103,7 +103,7 @@ sub _xml_to_asset {
     my $xs = new XML::Simple();
     my $obj = $xs->XMLin($xml);
     my %asset = (
-	"id" => $obj->{FullID}->{UUID},
+	"id" => $obj->{FullID}->{Guid},
 	"name" => $obj->{Name},
 	"description" => $obj->{Description},
 	"assetType" => $obj->{Type},

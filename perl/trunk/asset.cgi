@@ -15,7 +15,13 @@ my $response = "<ERROR />";
 if ($ENV{REQUEST_METHOD} eq "POST") {
 	my $request = $param->{'POSTDATA'};
 #	&OpenUGAI::Util::Log("asset", "request", $ENV{REQUEST_URI}, $request);
-	$response = &OpenUGAI::AssetServer::saveAsset($request);
+	eval {
+	    $response = &OpenUGAI::AssetServer::saveAsset($request);
+	};
+	if ($@) {
+		$response = "<ERROR>$@</ERROR>"; # TODO: better return message needed.
+		&OpenUGAI::Util::Log("asset", "postasset_error", $@);
+	}
 } else { # get
 	eval {
 		my $rest_param = &getRestParam();
@@ -28,6 +34,7 @@ if ($ENV{REQUEST_METHOD} eq "POST") {
 	};
 	if ($@) {
 		$response = "<ERROR>$@</ERROR>"; # TODO: better return message needed.
+		&OpenUGAI::Util::Log("asset", "getasset_error", $@);
 	}
 }
 #&OpenUGAI::Util::Log("asset", "response", $response);
