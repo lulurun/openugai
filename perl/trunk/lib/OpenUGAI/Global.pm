@@ -6,13 +6,13 @@ our $RUNNING_MODE = "cgi";
 # REGION
 our $SIM_RECV_KEY = "null";
 our $SIM_SEND_KEY = "null";
+
 # ASSET
 #our $ASSET_SERVER_URL = "http://127.0.0.1:8003/";
 our $ASSET_SERVER_URL = "http://openugai.work.lulu/perl/trunk/asset.cgi";
 our $ASSET_RECV_KEY = "null";
 our $ASSET_SEND_KEY = "null";
-
-our $AssetStorage = "gmail";
+our $ASSET_STORAGE = "mysql";
 
 # USER
 #our $USER_SERVER_URL = "http://127.0.0.1:8001/";
@@ -40,6 +40,11 @@ our $DBPASS = "opensim";
 
 # Global Vars
 our %Handlerlist = ();
+
+# OpenID
+our $OPENID_CONSUMER_SECRET = "wolfdrawer\&lulurun";
+our $OPENID_RETURN_TO_URL = "http://openugai.wolfdrawer.net/perl/trunk/login.cgi?method=openid_verify";
+our $OPENID_TRUST_ROOT_URL = "http://openugai.wolfdrawer.net/perl/trunk/";
 
 1;
 

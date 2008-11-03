@@ -8,11 +8,11 @@ our $singleton;
 sub GetInstance {
     return $singleton if ($singleton);
     my $this = shift;
-    if ($OpenUGAI::Global::AssetStorage eq "mysql") {
+    if ($OpenUGAI::Global::ASSET_STORAGE eq "mysql") {
 	require OpenUGAI::AssetServer::Storage::MySQL;
 	$singleton = new OpenUGAI::AssetServer::Storage::MySQL();
 	return $singleton;
-    } elsif ($OpenUGAI::Global::AssetStorage eq "gmail") {
+    } elsif ($OpenUGAI::Global::ASSET_STORAGE eq "gmail") {
 	require OpenUGAI::AssetServer::Storage::Gmail;
 	$singleton = new OpenUGAI::AssetServer::Storage::Gmail();
 	return $singleton;

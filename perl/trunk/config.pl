@@ -22,7 +22,7 @@ $OpenUGAI::Global::DBUSER = "opensim";
 $OpenUGAI::Global::DBPASS = "opensim";
 
 # ##########
-$OpenUGAI::Global::AssetStorage = "mysql";
+$OpenUGAI::Global::ASSET_STORAGE = "mysql";
 
 1;
 
