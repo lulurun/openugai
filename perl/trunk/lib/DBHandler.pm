@@ -4,13 +4,19 @@ use Carp;
 
 package DBHandler;
 
+our $DB_CONN;
+
+BEGIN {
+    $DB_CONN = undef;
+};
+
 sub getConnection {
 	my ($dsn, $user, $pass) = @_;
-	#return $DB_CONNECTION if ($DB_CONNECTION);
-	my $dbh = DBI->connect($dsn, $user, $pass);
-	$dbh->{AutoCommit} = 1;
-	$dbh->{RaiseError} = 1;
-	return $dbh;
+	return $DB_CONN if ($DB_CONN);
+	$DB_CONN = DBI->connect($dsn, $user, $pass);
+	$DB_CONN->{AutoCommit} = 1;
+	$DB_CONN->{RaiseError} = 1;
+	return $DB_CONN;
 }
 
 # #############

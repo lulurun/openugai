@@ -45,6 +45,9 @@ our %Handlerlist = ();
 our $OPENID_CONSUMER_SECRET = "wolfdrawer\&lulurun";
 our $OPENID_RETURN_TO_URL = "http://openugai.wolfdrawer.net/perl/trunk/login.cgi?method=openid_verify";
 our $OPENID_TRUST_ROOT_URL = "http://openugai.wolfdrawer.net/perl/trunk/";
+our $OPENID_NS_SREG_1_0 = "http://openid.net/sreg/1.0";
+our $OPENID_NS_SREG_1_1 = "http://openid.net/extensions/sreg/1.1";
+our $OPENID_NS_AX_1_0 = "http://openid.net/srv/ax/1.0";
 
 1;
 

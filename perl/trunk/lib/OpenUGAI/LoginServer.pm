@@ -3,6 +3,7 @@ package OpenUGAI::LoginServer;
 use strict;
 use Storable;
 use Digest::MD5;
+use Carp;
 
 use OpenUGAI::Global;
 use OpenUGAI::Util;
@@ -33,11 +34,36 @@ sub OpenIDRequestHandler {
 					);
 
     my $claimed_identity = $csr->claimed_identity($openid);
+    &OpenUGAI::Util::Log("login", "cident", Data::Dump::dump($claimed_identity));
+    &OpenUGAI::Util::Log("login", "cident->version", $claimed_identity->protocol_version);
+    if (!$claimed_identity) {
+	Carp::croak("not a valid openid");
+    }
+    # sreg
+    #$claimed_identity->set_extension_args(
+    #				  $OpenUGAI::Global::OPENID_NS_SREG_1_1,
+    #				  {
+    #				      required => 'nickname',
+    #				  },
+    #				  );
+    # ax
+    $claimed_identity->set_extension_args(
+					  $OpenUGAI::Global::OPENID_NS_AX_1_0,
+					  {
+					      mode => 'fetch_request',
+					      "type.nickname" => "http://schema.openid.net/namePerson/friendly",
+					      "type.email" => "http://schema.openid.net/contact/email",
+					      if_available => 'nickname,email',
+					  },
+					  );
+
     my $check_url = $claimed_identity->check_url(
 						 return_to  => $OpenUGAI::Global::OPENID_RETURN_TO_URL,
 						 trust_root => $OpenUGAI::Global::OPENID_TRUST_ROOT_URL,
 						 );
-    &MyCGI::redirect($check_url); # TODO: do this in the caller
+    &OpenUGAI::Util::Log("login", "check_url", $check_url);
+    #&MyCGI::redirect($check_url);
+    return wantarray ? ["redirect", $check_url] : $check_url;
 }
 
 # ##################
@@ -57,7 +83,8 @@ sub OpenIDVerifyHandler {
 				 setup_required => sub {
 				     my $setup_url = shift;
 				     # Redirect the user to $setup_url
-				     &MyCGI::redirect($setup_url);
+				     #&MyCGI::redirect($setup_url);				     
+                                     return wantarray ? ("redirect", $setup_url) : $setup_url;
 				 },
 				 cancelled => sub {
 				     # Do something appropriate when the user hits "cancel" at the OP
@@ -65,6 +92,7 @@ sub OpenIDVerifyHandler {
 				 verified => sub {
 				     my $vident = shift;
 				     # Do something with the VerifiedIdentity object $vident
+				     return wantarray ? ("output", $vident) : $vident;
 				 },
 				 error => sub {
 				     my $err = shift;

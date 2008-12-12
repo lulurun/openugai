@@ -32,10 +32,28 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
 	    &MyCGI::redirect($redirect_url);
 	}
     } elsif ($method eq "openid_request") { # OPENID LOGIN step 1
-	my $check_url = &OpenUGAI::LoginServer::OpenIDRequestHandler($param);
-	#&MyCGI::redirect($check_url);
+	eval {
+	    my $check_url = &OpenUGAI::LoginServer::OpenIDRequestHandler($param);
+	    &MyCGI::redirect($check_url);
+	};
+	if ($@) {
+	    &MyCGI::outputHtml("utf-8", $@);	    
+	}
     } elsif ($method eq "openid_verify") { # OPENID LOGIN step 2
-	&OpenUGAI::LoginServer::OpenIDVerifyHandler($param);
+	eval {
+	    my ($action, $vident) = &OpenUGAI::LoginServer::OpenIDVerifyHandler($param);
+	    if ($action eq "redirect") {
+		&MyCGI::redirect($vident);
+	    } else {
+		my $params_text = Data::Dump::dump($param);
+		my $sreg = $vident->extension_fields($OpenUGAI::Global::OPENID_NS_SREG_1_1);
+		my $verify_text = Data::Dump::dump($sreg);
+		&MyCGI::outputHtml("utf-8", $verify_text . "<br><br><pre>" . $params_text . "</pre>");	
+	    }
+	};
+	if ($@) {
+	    &MyCGI::outputHtml("utf-8", $@);	    
+	}
     } else {
 	&MyCGI::outputHtml("utf-8", &guide);
     }

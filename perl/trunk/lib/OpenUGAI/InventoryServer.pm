@@ -16,6 +16,7 @@ sub getHandlerList {
 	"DeleteItem" => \&_delete_item,
 	"RootFolders" => \&_root_folders,
 	"UpdateFolder" => \&_update_folder,
+	"PurgeFolder" => \&_purge_folder,
 	);
     return \%list;
 }
@@ -89,6 +90,14 @@ sub _move_folder {
     my $post_data = shift;
     my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
     &OpenUGAI::Data::Inventory::moveInventoryFolder($request_obj->{Body});
+    my $serializer = new XML::Serializer("true", "boolean");
+    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+}
+
+sub _purge_folder {
+    my $post_data = shift;
+    my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    &OpenUGAI::Data::Inventory::purgeInventoryFolder($request_obj->{Body});
     my $serializer = new XML::Serializer("true", "boolean");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
 }

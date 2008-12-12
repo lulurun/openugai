@@ -10,7 +10,8 @@ our %SQL = (
     save_inventory_item =>
     "REPLACE INTO inventoryitems VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     get_root_folder =>
-    "SELECT * FROM inventoryfolders WHERE parentFolderID=? AND agentId=?",
+    #"SELECT * FROM inventoryfolders WHERE parentFolderID=? AND agentId=?",
+    "SELECT * FROM inventoryfolders WHERE agentId=?",
     get_children_folders =>
     "SELECT * FROM inventoryfolders WHERE parentFolderID=?",
     get_user_inventory_folders =>
@@ -21,6 +22,10 @@ our %SQL = (
     "DELETE FROM inventoryitems WHERE inventoryID=?",
     move_inventory_folder =>
     "UPDATE inventoryfolders SET parentFolderID=? WHERE folderID=?",
+    purge__delete_items =>
+    "DELETE FROM inventoryitems WHERE parentFolderID=?",
+    purge__delete_folders =>
+    "DELETE FROM inventoryfolders WHERE parentFolderID=?",
     );
 
 
@@ -77,7 +82,8 @@ sub saveInventoryItem {
 
 sub getRootFolder {
     my $agent_id = shift;
-    my @args = ( &OpenUGAI::Util::ZeroUUID(), $agent_id );
+    #my @args = ( &OpenUGAI::Util::ZeroUUID(), $agent_id );
+    my @args = ( $agent_id );
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_root_folder}, \@args);
     my $count = @$res;
     if ($count > 0) {
@@ -110,14 +116,18 @@ sub deleteInventoryItem {
     return $res;
 }
 
-sub moveInventoryFolder {
+use Data::Dump;
+sub purgeInventoryFolder {
     my $info = shift;
+    &OpenUGAI::Util::Log("test", "purge_req", Data::Dump::dump($info));
+
     my @args = (
-	$info->{ParentID}->{Guid}, # TODO: not good
 	$info->{ID}->{Guid}, # TODO: not good UUID should be extracted in the higher level
 	);
-    &OpenUGAI::DBData::getSimpleResult($SQL{move_inventory_folder}, \@args);
+    &OpenUGAI::DBData::getSimpleResult($SQL{purge__delete_items}, \@args);
 }
+
+
 
 1;
 
