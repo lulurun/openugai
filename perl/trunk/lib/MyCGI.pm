@@ -24,6 +24,12 @@ sub getCookie {
 	return &_parse($cookie_value);
 }
 
+sub outputText {
+	my ($charset, $text) = @_;
+	print &CGI::header( -type => 'text/plain', -charset => $charset );
+	print $text;
+}
+
 sub outputHtml {
 	my ($charset, $html) = @_;
 	print &CGI::header(-charset => $charset);
