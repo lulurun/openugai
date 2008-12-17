@@ -39,27 +39,26 @@ sub OpenIDRequestHandler {
     if (!$claimed_identity) {
 	Carp::croak("not a valid openid");
     }
-    # sreg
-    #$claimed_identity->set_extension_args(
-    #				  $OpenUGAI::Global::OPENID_NS_SREG_1_1,
-    #				  {
-    #				      required => 'nickname',
-    #				  },
-    #				  );
-    # ax
-    $claimed_identity->set_extension_args(
-					  $OpenUGAI::Global::OPENID_NS_AX_1_0,
-					  {
-					      mode => 'fetch_request',
-					      "type.nickname" => "http://schema.openid.net/namePerson/friendly",
-					      "type.email" => "http://schema.openid.net/contact/email",
-					      if_available => 'nickname,email',
-					  },
-					  );
-
+    if ($OpenUGAI::Global::USER_AX) {
+	# sreg
+	$claimed_identity->set_extension_args($OpenUGAI::Global::OPENID_NS_SREG_1_1, {
+	    required => join(",", qw/email nickname/)
+	    });
+    } else {
+	# ax
+	$claimed_identity->set_extension_args($OpenUGAI::Global::OPENID_NS_AX_1_0, {
+	    mode => 'fetch_request',
+	    "type.nickname" => "http://schema.openid.net/namePerson/friendly",
+	    "type.email" => "http://schema.openid.net/contact/email",
+	    "type.firstname" => "http://schema.openid.net/namePerson/first",
+	    "type.lastname" => "http://schema.openid.net/namePerson/last",
+	    required => 'nickname,email,firstname,lastname',
+	});
+    }
     my $check_url = $claimed_identity->check_url(
 						 return_to  => $OpenUGAI::Global::OPENID_RETURN_TO_URL,
 						 trust_root => $OpenUGAI::Global::OPENID_TRUST_ROOT_URL,
+						 delayed_return => "checkid_setup",
 						 );
     &OpenUGAI::Util::Log("login", "check_url", $check_url);
     #&MyCGI::redirect($check_url);
@@ -103,21 +102,39 @@ sub OpenIDVerifyHandler {
 
 # ##################
 # shared method
+sub OpenIDVerifyOK {
+    my $param = shift;
+    my $firstname = "User";
+    my $lastname = "@ OpenID";
+    if ($param && $param->{"value.nickname.1"}) {
+	$firstname = $param->{"value.nickname.1"};
+    }
+    my $key = &OpenUGAI::Util::GenerateUUID();
+    my %userinfo = (
+		    UUID => $key,
+		    username => $firstname,
+		    lastname => $lastname,
+		    webLoginKey => $key,
+		    );
+    my $user = &OpenUGAI::Data::Users::CreateTemporaryUser(\%userinfo);
+    Storable::store($user, $OpenUGAI::Global::LOGINKEYDIR . "/" . $key);
+    return $user;
+}
+
 sub Authenticate {
     my $params = shift;
     my $user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
     my $login_pass = $params->{passwd};
     $login_pass =~ s/^\$1\$//;
     if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
-	return 0;
+	return undef;
     }
     if ($params->{weblogin}) {
 	my $key = &OpenUGAI::Util::GenerateUUID();
 	Storable::store($user, $OpenUGAI::Global::LOGINKEYDIR . "/" . $key);
-	return $key;
-    } else {
-	return $user;
+	$user->{webLoginKey} = $key;
     }
+    return $user;
 }
 
 # #################
@@ -135,7 +152,7 @@ sub _login_to_simulator {
     } elsif ($params->{web_login_key}) {
 	my $key = $OpenUGAI::Global::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
 	$user = Storable::retrieve($key);
-	unlink($key);
+	#unlink($key);
     } else {
 	return &_make_false_response("not enough params", "You must have been eaten by a wolf");    
     }

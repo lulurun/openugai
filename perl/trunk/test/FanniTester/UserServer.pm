@@ -6,13 +6,14 @@ use Digest::MD5;
 
 use OpenUGAI::Global;
 use OpenUGAI::Util;
-use OpenUGAI::UserServer::Config;
+use FanniTester::UserServer::Config;
 use OpenUGAI::Data::Avatar;
 use OpenUGAI::Data::Users;
 use OpenUGAI::Data::Agents;
 
 sub getHandlerList {
     my %list = (
+	"login_to_simulator" => \&_login_to_simulator,
 	"get_user_by_name" => \&_get_user_by_name,
 	"get_user_by_uuid" => \&_get_user_by_uuid,
 	"get_avatar_picker_avatar" => \&_get_avatar_picker_avatar, # TODO @@@
@@ -35,6 +36,25 @@ sub getHandlerList {
 
 sub _not_implemented {
     return &_make_false_response("not impleneted yet", "but I do not when will this works");
+}
+
+# ##################
+#
+sub Authenticate {
+    my $params = shift;
+    my $user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
+    my $login_pass = $params->{passwd};
+    $login_pass =~ s/^\$1\$//;
+    if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
+	return 0;
+    }
+    if ($params->{weblogin}) {
+	my $key = &OpenUGAI::Util::GenerateUUID();
+	Storable::store($user, $OpenUGAI::Global::LOGINKEYDIR . "/" . $key);
+	return $key;
+    } else {
+	return $user;
+    }
 }
 
 # #################
@@ -111,6 +131,166 @@ sub _update_avatar_appearance {
     return { returnString => "TRUE" };
 }
 
+sub _login_to_simulator {
+    my $params = shift;
+    # check params
+    if (!$params->{first} || !$params->{last}) {
+	return &_make_false_response("not enough params", "You must have been eaten by a wolf");
+    }
+    # get the user (check passwd or from a saved webloginkey)
+    my $user = undef;
+    if ($params->{passwd}) {
+	$user = &Authenticate($params);
+    } elsif ($params->{web_login_key}) {
+	my $key = $OpenUGAI::Global::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
+	$user = Storable::retrieve($key);
+	unlink($key);
+    } else {
+	return &_make_false_response("not enough params", "You must have been eaten by a wolf");    
+    }
+    if (!$user) {
+	return &_make_false_response("password not match", "Late! There is a wolf behind you");
+    }
+    # check other online agent
+    my $agent = &OpenUGAI::Data::Agents::SelectAgent($user->{UUID});
+    if ($agent && $agent->{agentOnline}) {
+	# try to notify the online user agent
+	&OpenUGAI::Data::Agents::SetOnlineStatus($user->{UUID}, 0);
+	return &_make_false_response(
+	    "presence",
+	    "You appear to be already logged in. " .
+	    "If this is not the case please wait for your session to timeout. " .
+	    "If this takes longer than a few minutes please contact the grid owner. " .
+	    "Please wait 5 minutes if you are going to connect to a region nearby to" .
+	    "the region you were at previously."
+	    );
+    }
+    # get start region / location
+    my $region_handle;
+    my @start_location;
+    if ($params->{start} eq "last") {
+	if ($agent->{currentHandle}) {
+	    $region_handle = $agent->{currentHandle};
+	} else {
+	    $region_handle = $user->{homeRegion};	    
+	}
+	if ($agent->{currentPos} =~ /<([\d\.]+),([\d\.]+),([\d\.]+)>/) {
+	    @start_location = ($1, $2, $3);
+	} else {
+	    @start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
+	}
+    } elsif ($params->{start} eq "home") {
+	$region_handle = $user->{homeRegion};
+	@start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
+    } else {
+	# url login; # TODO @@@ parse opensim url
+	$region_handle = $user->{homeRegion};
+	@start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
+    }
+    # contact with Grid server
+    my %grid_request_params = (
+	region_handle => $region_handle,
+	authkey => undef
+	);
+    my $grid_response = &OpenUGAI::Util::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
+    if (!$grid_response || $grid_response->{error}) {
+	# TODO @@@ do not report "can not", instead, drive agent to a living sim
+	return &_make_false_response("can not login", "requested region server is not alive -" . $grid_response->{error} . "-");
+    }
+    my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
+    my $internal_server_url = $grid_response->{internal_server_url}; # TODO: hack for regionservers behind a router
+    # contact with Region server
+    my $session_id = &OpenUGAI::Util::GenerateUUID;
+    my $secure_session_id = &OpenUGAI::Util::GenerateUUID;
+    my $circuit_code = int(rand() * 1000000000); # just a random integer
+    my $caps_id = &OpenUGAI::Util::GenerateUUID;
+    my %region_request_params = (
+	session_id => $session_id,
+	secure_session_id => $secure_session_id,
+	firstname => $user->{username},
+	lastname => $user->{lastname},
+	agent_id => $user->{UUID},
+	circuit_code => $circuit_code,
+	startpos_x => $start_location[0],
+	startpos_y => $start_location[1],
+	startpos_z => $start_location[2],
+	regionhandle => $region_handle,
+	caps_path => $caps_id,
+	user_server_url => "http://192.168.0.150/perl/trunk/user.cgi", # DP
+	);
+    # TODO: using $internal_server_url is a temporary solution
+    &OpenUGAI::Util::Log("user", "expect_user", Data::Dump::dump(\%region_request_params));
+    my $region_response = undef;
+    eval {
+    	$region_response = &OpenUGAI::Util::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
+    };
+    if ($@) {
+	return &_make_false_response("can not login", "failed to call expect_user: $@");
+    }
+    # make agent data at this point
+    $agent->{UUID} = $user->{UUID};
+    $agent->{sessionID} = $session_id;
+    $agent->{secureSessionID} = $secure_session_id;
+    $agent->{loginTime} = time;
+    $agent->{currentRegion} = $grid_response->{region_UUID};
+    $agent->{currentHandle} = $grid_response->{regionHandle};
+    $agent->{currentPos} = "<$start_location[0],$start_location[1],$start_location[2]>";
+    $agent->{agentOnline} = 1;
+    $agent->{logoutTime} = 0;
+    $agent->{agentIP} = "";  # TODO @@@
+    $agent->{agentPort} = 0; # TODO @@@
+    &OpenUGAI::Data::Agents::AgentLogon($agent);
+    # contact with Inventory server
+    my $inventory_data = &_create_inventory_data($user->{UUID});
+    # return to client
+    my %response = (
+	# login info
+	login => "true",
+	session_id => $session_id,
+	secure_session_id => $secure_session_id,
+	# agent
+	first_name => $user->{username},
+	last_name => $user->{lastname},
+	agent_id => $user->{UUID},
+	agent_access => "M", # ??? from linden => M & hard coding in opensim
+	# grid
+	start_location => $params->{start},
+	#sim_ip => $grid_response->{sim_ip},
+	#sim_port => $grid_response->{sim_port},
+	# FanniTester
+	sim_ip => "127.0.0.1",
+	sim_port => 9001,
+	#sim_port => 9001, # TODO: hack for testing another region server
+	region_x => $grid_response->{region_locx} * 256,
+	region_y => $grid_response->{region_locy} * 256,
+	# other
+	inventory_host => undef, # inv13-mysql
+	circuit_code => $circuit_code,
+	message => "Do you fear the wolf ?",
+	seconds_since_epoch => time,
+	seed_capability => $region_server_url . "/CAPS/" . $caps_id . "0000/", # https://sim2734.agni.lindenlab.com:12043/cap/61d6d8a0-2098-7eb4-2989-76265d80e9b6
+	look_at => &_make_r_string($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ}),
+	home => &_make_home_string(
+	    [ $grid_response->{region_locx} * 256, $grid_response->{region_locy} * 256 ],
+	    [ $start_location[0], $start_location[1], $start_location[2] ],
+	    [ $user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ} ]), # TODO @@@ last lookat
+	"inventory-skeleton" => $inventory_data->{InventoryArray},
+	"inventory-root" => [ { folder_id => $inventory_data->{RootFolderID} } ],
+	"event_notifications" => \@OpenUGAI::UserServer::Config::event_notifications,
+	"event_categories" => \@OpenUGAI::UserServer::Config::event_categories,
+	"global-textures" => \@OpenUGAI::UserServer::Config::global_textures,
+	"inventory-lib-owner" => \@OpenUGAI::UserServer::Config::inventory_lib_owner,
+	"inventory-skel-lib" => \@OpenUGAI::UserServer::Config::inventory_skel_lib, # hard coding in OpenUGAI
+	"inventory-lib-root" => \@OpenUGAI::UserServer::Config::inventory_lib_root,
+	"classified_categories" => \@OpenUGAI::UserServer::Config::classified_categories,
+	"login-flags" => \@OpenUGAI::UserServer::Config::login_flags,
+	"initial-outfit" => \@OpenUGAI::UserServer::Config::initial_outfit,
+	"gestures" => \@OpenUGAI::UserServer::Config::gestures,
+	"ui-config" => \@OpenUGAI::UserServer::Config::ui_config,
+	);
+    return \%response;
+}
+
 sub _get_user_by_name {
     my $param = shift;
     
@@ -132,23 +312,12 @@ sub _get_user_by_uuid {
     if ($param->{avatar_uuid}) {
 	my $user = &OpenUGAI::Data::Users::getUserByUUID($param->{avatar_uuid});
 	if (!$user) {
-	    # @@@ move this to OpenUGAI::Data::Users
-	    $user = &_getForeginLoginUser($param->{avatar_uuid});
-	}
-	if (!$user) {
 	    return &_unknown_user_response;
 	}
 	return &_convert_to_response($user);
     } else {
 	return &_unknown_user_response;
     }
-}
-
-sub _getForeginLoginUser {
-    my $user_id = shift;
-    my $user = Storable::retrieve($user_id);
-    # @@@ error check !! if not found ...
-    return $user;
 }
 
 sub _get_avatar_picker_avatar {

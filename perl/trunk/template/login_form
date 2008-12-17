@@ -6,6 +6,14 @@
 <meta http-equiv="cache-control" content="no-cache">
 <meta http-equiv="Pragma" content="no-cache">
 <title>OpenSim Login</title>
+<style type="text/css">
+<!--
+body {
+background-image: url(chinese_traditional_story.png);
+background-repeat: no-repeat;
+}
+-->
+</style> 
 </head>
 
 <body>
@@ -116,14 +124,14 @@ function MD5HashPassword(){
 <br>
 <!-- Viewer Information -->
 <br>
-
+<!--
 <div id="helplinks">
  <a href="#join now link" target="_blank"></a> | 
  <a href="#forgot password link" target="_blank"></a>
 </div>
 
 <div id="channelinfo"> [$channel] | [$version]=[$lang]</div>
-
+-->
 
 </body>
 </html>

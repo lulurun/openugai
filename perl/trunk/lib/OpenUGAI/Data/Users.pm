@@ -46,6 +46,41 @@ our @USERS_COLUMNS = (
 	"webLoginKey",
 );
 
+our %DEFAULT_USER = (
+	"UUID" => "00000000-0000-0000-0000-000000000000",
+	"username" => "Test",
+	"lastname" => "User",
+	"passwordHash" => "",
+	"passwordSalt" => "",
+	"homeRegion" => "1099511628032000",
+	"homeLocationX" => 128,
+	"homeLocationY" => 128,
+	"homeLocationZ" => 128,
+	"homeLookAtX" => 100,
+	"homeLookAtY" => 100,
+	"homeLookAtZ" => 100,
+	"created" => 0,
+	"lastLogin" => 0,
+	"userInventoryURI" => "",
+	"userAssetURI" => "",
+	"profileCanDoMask" => 0,
+	"profileWantDoMask" => 0,
+	"profileAboutText" => "",
+	"profileFirstText" => "",
+	"profileImage" => "",
+	"profileFirstImage" => "",
+	"webLoginKey" => "",
+);
+
+sub CreateTemporaryUser {
+    my $userinfo = shift;
+    my %new_user = ();
+    foreach (@USERS_COLUMNS) {
+	$new_user{$_} = $userinfo->{$_} ? $userinfo->{$_} : $DEFAULT_USER{$_};
+    }
+    return \%new_user;
+}
+
 sub getUserByName {
     my ($first, $last) = @_;
     my @args = ( lc($first), lc($last) );
