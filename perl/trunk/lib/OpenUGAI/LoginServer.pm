@@ -414,21 +414,7 @@ POSTDATA
 	return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };
     } else {
 	# TODO: impossible ???
-	my @AgentInventoryFolders = ();
-	my $root_uuid = &OpenUGAI::Util::ZeroUUID();
-	my $folder = $folders;
-	if ($folder->{ParentID}->{Guid} eq &OpenUGAI::Util::ZeroUUID()) {
-	    $root_uuid = $folder->{ID}->{Guid};
-	}
-	my %folder_hash = (
-			   name => $folder->{Name},
-			   parent_id => $folder->{ParentID}->{Guid},
-			   version => $folder->{Version},
-			   type_default => $folder->{Type},
-			   folder_id => $folder->{ID}->{Guid},
-			   );
-	push @AgentInventoryFolders, \%folder_hash;
-	return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };	
+	# TODO: I found this is possible, but today's SL viewer does not support this case,
     }
     return undef;
 }

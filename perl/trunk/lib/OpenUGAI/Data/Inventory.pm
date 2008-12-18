@@ -10,8 +10,8 @@ our %SQL = (
     save_inventory_item =>
     "REPLACE INTO inventoryitems VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     get_root_folder =>
-    #"SELECT * FROM inventoryfolders WHERE parentFolderID=? AND agentId=?",
-    "SELECT * FROM inventoryfolders WHERE agentId=?",
+    "SELECT * FROM inventoryfolders WHERE parentFolderID=? AND agentId=?",
+    #"SELECT * FROM inventoryfolders WHERE agentId=?",
     get_children_folders =>
     "SELECT * FROM inventoryfolders WHERE parentFolderID=?",
     get_user_inventory_folders =>
@@ -82,8 +82,8 @@ sub saveInventoryItem {
 
 sub getRootFolder {
     my $agent_id = shift;
-    #my @args = ( &OpenUGAI::Util::ZeroUUID(), $agent_id );
-    my @args = ( $agent_id );
+    my @args = ( &OpenUGAI::Util::ZeroUUID(), $agent_id );
+    #my @args = ( $agent_id );
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_root_folder}, \@args);
     my $count = @$res;
     if ($count > 0) {
