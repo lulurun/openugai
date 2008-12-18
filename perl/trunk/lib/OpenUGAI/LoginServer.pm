@@ -391,7 +391,10 @@ POSTDATA
 #   }
     
     my $folders = $res_obj->{InventoryFolderBase};
-    my $folders_count = @$folders;
+    my $folders_count = 0;
+    if ( (ref $folders) eq "ARRAY") {
+	$folders_count = @$folders;
+    }
     if ($folders_count > 0) {
 	my @AgentInventoryFolders = ();
 	my $root_uuid = &OpenUGAI::Util::ZeroUUID();
@@ -411,6 +414,21 @@ POSTDATA
 	return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };
     } else {
 	# TODO: impossible ???
+	my @AgentInventoryFolders = ();
+	my $root_uuid = &OpenUGAI::Util::ZeroUUID();
+	my $folder = $folders;
+	if ($folder->{ParentID}->{Guid} eq &OpenUGAI::Util::ZeroUUID()) {
+	    $root_uuid = $folder->{ID}->{Guid};
+	}
+	my %folder_hash = (
+			   name => $folder->{Name},
+			   parent_id => $folder->{ParentID}->{Guid},
+			   version => $folder->{Version},
+			   type_default => $folder->{Type},
+			   folder_id => $folder->{ID}->{Guid},
+			   );
+	push @AgentInventoryFolders, \%folder_hash;
+	return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };	
     }
     return undef;
 }
