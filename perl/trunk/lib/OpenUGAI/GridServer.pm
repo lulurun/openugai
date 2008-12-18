@@ -5,7 +5,7 @@ use OpenUGAI::Global;
 use OpenUGAI::Util;
 use OpenUGAI::Data::Regions;
 
-our $ValidateContactable = 1; # 0 for debug
+our $ValidateContactable = 0; # 0 for debug
 
 our %XMLRPCHandlers = (
 		       "simulator_login" => \&_simulator_login,

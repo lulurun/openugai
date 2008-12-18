@@ -6,19 +6,28 @@ use XML::Serializer;
 use OpenUGAI::Util;
 use OpenUGAI::Data::Inventory;
 
-sub getHandlerList {
-    my %list = (
-	"GetInventory" => \&_get_inventory,
-	"CreateInventory" => \&_create_inventory,
-	"NewFolder" => \&_new_folder,
-	"MoveFolder" => \&_move_folder,
-	"NewItem" => \&_new_item,
-	"DeleteItem" => \&_delete_item,
-	"RootFolders" => \&_root_folders,
-	"UpdateFolder" => \&_update_folder,
-	"PurgeFolder" => \&_purge_folder,
-	);
-    return \%list;
+our %RestHandlers = (
+		     "GetInventory" => \&_get_inventory,
+		     "CreateInventory" => \&_create_inventory,
+		     "NewFolder" => \&_new_folder,
+		     "MoveFolder" => \&_move_folder,
+		     "NewItem" => \&_new_item,
+		     "DeleteItem" => \&_delete_item,
+		     "RootFolders" => \&_root_folders,
+		     "UpdateFolder" => \&_update_folder,
+		     "PurgeFolder" => \&_purge_folder,
+		     );
+sub StartUp {
+    # for mod_perl startup
+    ;
+}
+
+sub DispatchRestHandler {
+    my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
+    if ($RestHandlers{$methodname}) {
+	return $RestHandlers{$methodname}->(@param);
+    }
+    Carp::croak("unknown rest method");
 }
 
 # #################

@@ -4,16 +4,18 @@ use strict;
 use OpenUGAI::DBData;
 
 our %SQL = (
-    get_avatar_appearance =>
-    "select * from avatarappearance where owner=?",
-    update_avatar_appearance =>
-    "replace into avatarappearance values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-    update_avatar_appearance_raw_data =>
-    "replace into avatarappearance values(?,?,X?,X?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-    get_avatar_attachment =>
-    "select * from avatarattachments where uuid=?",
-    update_avatar_attachment =>
-    "replace into avatarattachments values(?,?,?,?)",
+	    get_avatar_appearance =>
+	    "select * from avatarappearance where owner=?",
+	    update_avatar_appearance =>
+	    "replace into avatarappearance values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+	    update_avatar_appearance_raw_data =>
+	    "replace into avatarappearance values(?,?,X?,X?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+	    get_avatar_attachment =>
+	    "select * from avatarattachments where uuid=?",
+	    update_avatar_attachment =>
+	    "replace into avatarattachments values(?,?,?,?)",
+	    delete_avatar_attachments =>
+	    "delete from avatarattachments where uuid=?",
 );
 
 our @ATTACHMENT_COLUMNS = (
@@ -71,6 +73,13 @@ sub UpdateAttachment {
 	push @args, $attachment->{$_}; # TODO: OK ???
     }
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_attachment}, \@args);
+    return $res;
+}
+
+sub DeleteAvatarAttachments {
+    my $owner = shift;
+    my @args = ( $owner );
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{delete_avatar_attachments}, \@args);
     return $res;
 }
 

@@ -97,6 +97,19 @@ sub _get_avatar_appearance {
 	    $appearance{texture} = RPC::XML::base64->new($res->{Texture});
 	    delete $res->{Texture};
 	    map { $appearance{lc($_)} = RPC::XML::string->new($res->{$_}); } keys %$res;
+	    # attachments
+	    my $attachments = &OpenUGAI::Data::Avatar::SelectAttachment($owner);
+	    my @attachment_string_list = ();
+	    my $attachment_string = "";
+	    if ($attachments) {
+		foreach (@$attachments) {
+		    push @attachment_string_list, $_->{attachpoint} . "," . $_->{item} . "," . $_->{asset};
+		}
+		$attachment_string = join(",", @attachment_string_list);
+	    }
+	    if ($attachment_string) {
+		$appearance{attachments} = $attachment_string;
+	    }
 	} else {
 	    Carp::croak("There was no appearance found for this avatar");
 	}
@@ -113,8 +126,28 @@ sub _update_avatar_appearance {
 	return &_make_error_response("unknown_avatar", "You must have been eaten by a wolf - onwer needed");
     }
     eval {
+	# TODO: also on opensim side
+	# 1. Too stupid that here always contains both appearance and attachment
+	# 2. Need to think about transaction
 	&OpenUGAI::Data::Avatar::UpdateAppearance($params);
-	# I have to say thanks MySQL very much, ...
+	if ($params->{attachments}) {
+	    my @attachments = ();
+	    my @values = split(/,/, $params->{attachments});
+	    while (my $p = shift @values) {
+		push @attachments, {
+		    UUID => $params->{owner},
+		    attachpoint => $p,
+		    item => shift @values,
+		    asset => shift @values
+		    };
+	    }
+	    if (@attachments > 0) {
+		&OpenUGAI::Data::Avatar::DeleteAvatarAttachments($params->{owner});
+		foreach (@attachments) {
+		    &OpenUGAI::Data::Avatar::UpdateAttachment($_);
+		}
+	    }
+	}
     };
     if ($@) {
 	return &_make_false_response("can not update appearance", $@);

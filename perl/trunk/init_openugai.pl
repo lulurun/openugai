@@ -28,10 +28,7 @@ $OpenUGAI::Global::RUNNING_MODE = "mod_perl";
 }
 # inventory server
 {
-    my $list = &OpenUGAI::InventoryServer::getHandlerList();
-    foreach (keys %list) {
-	$OpenUGAI::Global::HANDLER_LIST{$_} = $list->{$_};
-    }
+    &OpenUGAI::InventoryServer::StartUp();
 }
 # asset server
 {
