@@ -5,22 +5,33 @@ use OpenUGAI::Global;
 use OpenUGAI::Util;
 use OpenUGAI::Data::Regions;
 
-our $ValidateContactable = 0;
+our $ValidateContactable = 1; # 0 for debug
 
-sub getHandlerList {
-    my %list = (
-	"simulator_login" => \&_simulator_login,
-	"simulator_data_request" => \&_simulator_data_request,
-	"simulator_after_region_moved" => \&_simulator_after_region_moved,
-	"map_block" => \&_map_block,
-	"register_messageserver" => \&_not_implemented,
-	"deregister_messageserver" => \&_not_implemented,
-	);
-    return \%list;
-}
+our %XMLRPCHandlers = (
+		       "simulator_login" => \&_simulator_login,
+		       "simulator_data_request" => \&_simulator_data_request,
+		       "simulator_after_region_moved" => \&_simulator_after_region_moved,
+		       "map_block" => \&_map_block,
+		       # not implemented
+		       "register_messageserver" => \&_not_implemented,
+		       "deregister_messageserver" => \&_not_implemented,
+		       );
 
 sub _not_implemented {
-    return &_make_false_response("not impleneted yet", "but I do not when will this works");
+    return &_make_false_response("not implemented yet");
+}
+
+sub StartUp {
+    # for mod_perl startup
+    ;
+}
+
+sub DispatchXMLRPCHandler {
+    my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
+    if ($XMLRPCHandlers{$methodname}) {
+	return $XMLRPCHandlers{$methodname}->(@param);
+    }
+    Carp::croak("unknown xmlrpc method");
 }
 
 # #################

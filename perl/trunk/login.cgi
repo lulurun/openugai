@@ -18,10 +18,10 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
     } else {
 	&MyCGI::outputHtml("utf-8", $response);	
     }
-} else {
+} else { # POST method, XMLRPC
     my $postdata = $param->{'POSTDATA'};
     if (!$postdata) {
-	&MyCGI::outputHtml("utf-8", "");
+	Carp::croak("no post data");
     } else {
 	&OpenUGAI::Util::Log("login", "request", $postdata);
 	my $xmlrpc = new XML::RPC();
@@ -35,3 +35,4 @@ if ($@) {
     &OpenUGAI::Util::Log("login", "error", $@);
     &MyCGI::outputHtml("utf-8", &OpenUGAI::SampleApp::Guide);
 }
+

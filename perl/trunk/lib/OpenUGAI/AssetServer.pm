@@ -13,7 +13,7 @@ sub StartUp {
     };
     if ($@) {
 	$AssetStorage = undef;
-	OpenUGAI::Util::Log("asset", "startup", "can not start AssetServer: $@");
+	Cap::croak("can not start AssetServer: $@");
     }
 }
 

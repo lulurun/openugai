@@ -11,30 +11,41 @@ use OpenUGAI::Data::Avatar;
 use OpenUGAI::Data::Users;
 use OpenUGAI::Data::Agents;
 
-sub getHandlerList {
-    my %list = (
-	"get_user_by_name" => \&_get_user_by_name,
-	"get_user_by_uuid" => \&_get_user_by_uuid,
-	"get_avatar_picker_avatar" => \&_get_avatar_picker_avatar, # TODO @@@
-	"add_new_user_friend" => \&_not_implemented,
-	"remove_user_frind" => \&_not_implemented,
-	"update_user_friend_perms" => \&_not_implemented,
-	"get_user_friend_list" => \&_not_implemented,
-	"get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to other service or implemented in the hell.
-	"update_avatar_appearance" => \&_update_avatar_appearance,
-	"update_user_current_region" => \&_update_user_current_region,
-	"logout_of_simulator" => \&_logout_of_simulator,
-	"get_agent_by_uuid" => \&_get_agent_by_uuid,
-	"register_messageserver" => \&_not_implemented,
-	"agent_change_region" => \&_agent_change_region,
-	"deregister_messageserver" => \&_deregister_messageserver,
-	"update_user_profile" => \&_not_implement,
-	);
-    return \%list;
-}
+our %XMLRPCHandlers = (
+		       "get_user_by_name" => \&_get_user_by_name,
+		       "get_user_by_uuid" => \&_get_user_by_uuid,
+		       "get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to other service or implemented in the hell.
+		       "update_avatar_appearance" => \&_update_avatar_appearance,
+		       "update_user_current_region" => \&_update_user_current_region,
+		       "logout_of_simulator" => \&_logout_of_simulator,
+		       "get_agent_by_uuid" => \&_get_agent_by_uuid,
+		       "agent_change_region" => \&_agent_change_region,
+		       "deregister_messageserver" => \&_deregister_messageserver,
+		       # not implemented
+		       "register_messageserver" => \&_not_implemented,
+		       "update_user_profile" => \&_not_implement,
+		       "add_new_user_friend" => \&_not_implemented,
+		       "remove_user_frind" => \&_not_implemented,
+		       "update_user_friend_perms" => \&_not_implemented,
+		       "get_user_friend_list" => \&_not_implemented,
+		       "get_avatar_picker_avatar" => \&_not_implemented,
+		       );
 
 sub _not_implemented {
-    return &_make_false_response("not impleneted yet", "but I do not when will this works");
+    return &_make_false_response("not implemented yet");
+}
+
+sub StartUp {
+    # for mod_perl startup
+    ;
+}
+
+sub DispatchXMLRPCHandler {
+    my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
+    if ($XMLRPCHandlers{$methodname}) {
+	return $XMLRPCHandlers{$methodname}->(@param);
+    }
+    Carp::croak("unknown xmlrpc method");
 }
 
 # #################
@@ -151,58 +162,8 @@ sub _getForeginLoginUser {
     return $user;
 }
 
-sub _get_avatar_picker_avatar {
-}
-
 # #################
-# sub functions
-sub _create_inventory_data {
-    my $user_id = shift;
-    my $postdata =<< "POSTDATA";
-<?xml version="1.0" encoding="utf-8"?><guid>$user_id</guid>
-POSTDATA
-    # TODO:
-    my $res = undef;
-    eval {
-    	$res = &OpenUGAI::Util::HttpRequest("POST", $OpenUGAI::Global::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
-    };
-    if ($@) {
-    	Carp::croak($@);
-    }
-    my $res_obj = &OpenUGAI::Util::XML2Obj($res);
-    
-#    if (!$res_obj->{InventoryFolderBase}) {
-#	&OpenUGAI::Util::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/CreateInventory/", $postdata);
-#	# Sleep(10000); # TODO: need not to do this
-#	$res = &OpenUGAI::Util::HttpPostRequest($OpenUGAI::Config::INVENTORY_SERVER_URL . "/RootFolders/", $postdata);
-#	$res_obj = &OpenUGAI::Util::XML2Obj($res);
-#   }
-    
-    my $folders = $res_obj->{InventoryFolderBase};
-    my $folders_count = @$folders;
-    if ($folders_count > 0) {
-	my @AgentInventoryFolders = ();
-	my $root_uuid = &OpenUGAI::Util::ZeroUUID();
-	foreach my $folder (@$folders) {
-	    if ($folder->{ParentID}->{Guid} eq &OpenUGAI::Util::ZeroUUID()) {
-		$root_uuid = $folder->{ID}->{Guid};
-	    }
-	    my %folder_hash = (
-		name => $folder->{Name},
-		parent_id => $folder->{ParentID}->{Guid},
-		version => $folder->{Version},
-		type_default => $folder->{Type},
-		folder_id => $folder->{ID}->{Guid},
-		);
-	    push @AgentInventoryFolders, \%folder_hash;
-	}
-	return { InventoryArray => \@AgentInventoryFolders, RootFolderID => $root_uuid };
-    } else {
-	# TODO: impossible ???
-    }
-    return undef;
-}
-
+# Util Functions
 sub _convert_to_response {
     my $user = shift;
     my %response = (
@@ -234,8 +195,6 @@ sub _convert_to_response {
     return \%response;
 }
 
-# #################
-# Util Functions
 sub _make_false_response {
     my ($reason, $message) = @_;
     return { reason => $reason, login => "false", message => $message };
@@ -251,122 +210,6 @@ sub _unknown_user_response {
 	error_type => "unknown_user",
 	error_desc => "The user requested is not in the database",
     };
-}
-
-sub _make_home_string {
-    my ($region_handle, $position, $look_at) = @_;
-    my $region_handle_string = "'region_handle':" . &_make_r_string(@$region_handle);
-    my $position_string = "'position':" . &_make_r_string(@$position);
-    my $look_at_string = "'look_at':" . &_make_r_string(@$look_at);
-    return "{" . $region_handle_string . ", " . $position_string . ", " . $look_at_string . "}";
-}
-
-sub _make_r_string {
-    my @params = @_;
-    foreach (@params) {
-	$_ = "r" . $_;
-    }
-    return "[" . join(",", @params) . "]";
-}
-
-# #################
-# OpenID Function
-sub _check_openid_param {
-    my $params = shift;
-    # @@@ not implemented
-    return 1;
-}
-
-sub OpenID_PRELogin {
-    my $params = shift;
-    my %response = ();
-    # openid param validation
-    if (!&_check_openid_param($params)) {
-	$response{error} = "invalid openid parameter";
-	return \%response;
-    }
-    # select user (check existence of the user)
-    my $user = undef;
-    eval {
-	$user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
-    };
-    if ($@) {
-	$response{error} = $@; # will be redirect to user login page
-	return \%response;
-    }
-    
-    # contact with Grid server
-    my %grid_request_params = (
-	region_handle => $user->{homeRegion},
-	authkey => undef
-	);
-    my $grid_response = &OpenUGAI::Util::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
-    my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
-    # contact with Region server
-    my $session_id = &OpenUGAI::Util::GenerateUUID;
-    my $secure_session_id = &OpenUGAI::Util::GenerateUUID;
-    my $circuit_code = int(rand() * 1000000000); # just a random integer
-    my $caps_id = &OpenUGAI::Util::GenerateUUID;
-    my %region_request_params = (
-	session_id => $session_id,
-	secure_session_id => $secure_session_id,
-	firstname => $user->{username},
-	lastname => $user->{lastname},
-	agent_id => $user->{UUID},
-	circuit_code => $circuit_code,
-	startpos_x => $user->{homeLocationX},
-	startpos_y => $user->{homeLocationY},
-	startpos_z => $user->{homeLocationZ},
-	regionhandle => $user->{homeRegion},
-	caps_path => $caps_id,
-	);
-    my $region_response = &OpenUGAI::Util::XMLRPCCall($region_server_url, "expect_user", \%region_request_params);
-    # contact with Inventory server
-    my $inventory_data = &_create_inventory_data($user->{UUID});
-    # return to client
-    %response = (
-	# login info
-	login => "true",
-	session_id => $session_id,
-	secure_session_id => $secure_session_id,
-	# agent
-	first_name => $user->{username},
-	last_name => $user->{lastname},
-	agent_id => $user->{UUID},
-	agent_access => "M", # ??? from linden => M & hard coding in opensim
-	# grid
-	start_location => $params->{start},
-	sim_ip => $grid_response->{sim_ip},
-	sim_port => $grid_response->{sim_port},
-	#sim_port => 9001,
-	region_x => $grid_response->{region_locx} * 256,
-	region_y => $grid_response->{region_locy} * 256,
-	# other
-	inventory_host => undef, # inv13-mysql
-	circuit_code => $circuit_code,
-	message => "Do you fear the wolf ?",
-	seconds_since_epoch => time,
-	seed_capability => $region_server_url . "/CAPS/" . $caps_id . "0000/", # https://sim2734.agni.lindenlab.com:12043/cap/61d6d8a0-2098-7eb4-2989-76265d80e9b6
-	look_at => &_make_r_string($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ}),
-	home => &_make_home_string(
-	    [$grid_response->{region_locx} * 256, $grid_response->{region_locy} * 256],
-	    [$user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationX}],
-	    [$user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ}]),
-	"inventory-skeleton" => $inventory_data->{InventoryArray},
-	"inventory-root" => [ { folder_id => $inventory_data->{RootFolderID} } ],
-	"event_notifications" => \@OpenUGAI::UserServer::Config::event_notifications,
-	"event_categories" => \@OpenUGAI::UserServer::Config::event_categories,
-	"global-textures" => \@OpenUGAI::UserServer::Config::global_textures,
-	"inventory-lib-owner" => \@OpenUGAI::UserServer::Config::inventory_lib_owner,
-	"inventory-skel-lib" => \@OpenUGAI::UserServer::Config::inventory_skel_lib, # hard coding in OpenUGAI
-	"inventory-lib-root" => \@OpenUGAI::UserServer::Config::inventory_lib_root,
-	"classified_categories" => \@OpenUGAI::UserServer::Config::classified_categories,
-	"login-flags" => \@OpenUGAI::UserServer::Config::login_flags,
-	"initial-outfit" => \@OpenUGAI::UserServer::Config::initial_outfit,
-	"gestures" => \@OpenUGAI::UserServer::Config::gestures,
-	"ui-config" => \@OpenUGAI::UserServer::Config::ui_config,
-	);
-    return \%response;
 }
 
 1;

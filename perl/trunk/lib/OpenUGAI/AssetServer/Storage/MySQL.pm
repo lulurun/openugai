@@ -54,6 +54,7 @@ sub getAsset {
 	    return $xml;
 	}
     }
+    Carp::croak("can not find asset $uuid");
     return ""; # TODO: failed xml
 }
 

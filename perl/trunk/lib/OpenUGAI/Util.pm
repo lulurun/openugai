@@ -77,11 +77,13 @@ sub XML2Obj {
 use Data::Dump;
 sub Log {
     my $server_name = shift;
+    my $name = shift;
     my $log = shift;
     if (ref $log) {
 	$log = Data::Dump::dump($log);
     }
     open(FILE, ">>" . $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log");
+    print FILE $name . "\n";
     print FILE $log . "\n";
     print FILE "<<<<<<<<<<<=====================\n\n";
     close(FILE);

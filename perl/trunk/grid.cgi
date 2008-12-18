@@ -6,23 +6,28 @@ use XML::RPC;
 use MyCGI;
 use OpenUGAI::Util;
 use OpenUGAI::GridServer;
+use OpenUGAI::SampleApp;
 require "config.pl";
 
 my $param = &MyCGI::getParam();
-my $request = $param->{'POSTDATA'};
-&OpenUGAI::Util::Log("grid", "request", $request);
-my $xmlrpc = new XML::RPC();
-my $response = $xmlrpc->receive($request, \&XMLRPCHandler);
-&OpenUGAI::Util::Log("grid", "response", $response);
-&MyCGI::outputXml("utf-8", $response);
-
-sub XMLRPCHandler {
-    my ($methodname, @param) = @_;
-    my $handler_list = &OpenUGAI::GridServer::getHandlerList();
-    if (!$handler_list->{$methodname}) {
-	Carp::croak("?"); # @@@ TODO: handle bad xmlrpc
+eval {
+if ($ENV{"REQUEST_METHOD"} eq "GET") {
+    Carp::croak("GET method not allowed");
+} else { # POST method, XMLRPC
+    my $postdata = $param->{'POSTDATA'};
+    if (!$postdata) {
+	Carp::croak("no post data");
     } else {
-	my $handler = $handler_list->{$methodname};
-	return $handler->(@param);
+	&OpenUGAI::Util::Log("grid", "request", $postdata);
+	my $xmlrpc = new XML::RPC();
+	my $response = $xmlrpc->receive($postdata, \&OpenUGAI::GridServer::DispatchXMLRPCHandler);
+	&OpenUGAI::Util::Log("grid", "response", Data::Dump::dump($response));
+	&MyCGI::outputXml("utf-8", $response);
     }
 }
+};
+if ($@) {
+    &OpenUGAI::Util::Log("grid", "error", $@);
+    &MyCGI::outputHtml("utf-8", &OpenUGAI::SampleApp::Guide);
+}
+
