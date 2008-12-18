@@ -74,15 +74,31 @@ sub XML2Obj {
 	return $xs->XMLin($xml);
 }
 
+use Data::Dump;
 sub Log {
     my $server_name = shift;
-    my @param = @_;
-    open(FILE, ">>" . $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log");
-    foreach(@param) {
-    	print FILE $_ . "\n";
+    my $log = shift;
+    if (ref $log) {
+	$log = Data::Dump::dump($log);
     }
+    open(FILE, ">>" . $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log");
+    print FILE $log . "\n";
     print FILE "<<<<<<<<<<<=====================\n\n";
     close(FILE);
+}
+
+sub URLEncode {
+	my $str = shift;
+	$str =~ s/([^\w ])/'%'.unpack('H2', $1)/eg;
+	$str =~ tr/ /+/;
+	return $str;
+}
+
+sub URLDecode {
+  my $str = shift;
+  $str =~ tr/+/ /;
+  $str =~ s/%([0-9A-Fa-f][0-9A-Fa-f])/pack('H2', $1)/eg;
+  return $str;
 }
 
 1;

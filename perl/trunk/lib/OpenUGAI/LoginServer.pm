@@ -7,6 +7,7 @@ use Carp;
 
 use OpenUGAI::Global;
 use OpenUGAI::Util;
+use OpenUGAI::SampleApp;
 use OpenUGAI::UserServer::Config;
 use OpenUGAI::Data::Users;
 use OpenUGAI::Data::Agents;
@@ -15,16 +16,67 @@ use CGI;
 use LWPx::ParanoidAgent;
 use Net::OpenID::Consumer;
 
-sub getHandlerList {
-    my %list = (
-	"login_to_simulator" => \&_login_to_simulator,
-	);
-    return \%list;
+our %XMLRPCHandlers = (
+		       "login_to_simulator" => \&_login_to_simulator,
+);
+
+our %HTTPHandlers = (
+		     "loginpage" => \&_show_login_page,
+		     "go" => \&_login_from_web_page,
+		     "openid_request" => \&_openid_request_handler,
+		     "openid_verify" => \&_openid_verify_handler,
+);
+
+sub StartUp {
+    # for mod_perl startup
+    ;
+}
+
+sub DispatchXMLRPCHandler {
+    my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
+    if ($XMLRPCHandlers{$methodname}) {
+	return $XMLRPCHandlers{$methodname}->(@param);
+    }
+    Carp::croak("unknown xmlrpc method");
+}
+
+sub DispatchHTTPHandler {
+    my ($methodname, $param) = @_; # $param is raw http request param hash list
+    if ($HTTPHandlers{$methodname}) {
+	return $HTTPHandlers{$methodname}->($param);
+    }
+    Carp::croak("unknown http method");
+}
+
+# ##################
+# HTTP handlers
+sub _show_login_page {
+    my $param = shift;
+    return &OpenUGAI::SampleApp::LoginForm($param);
+}
+
+sub _login_from_web_page {
+    my $param = shift;
+    my %auth_param = (
+		      "first" => $param->{username},
+		      "last"  => $param->{lastname},
+		      "passwd" => $param->{password},
+		      "weblogin" => $param->{weblogin},
+		      );
+    my $userinfo = &Authenticate(\%auth_param);
+    if (!$userinfo) {
+	return &OpenUGAI::SampleApp::LoginForm($param, "wrong password");
+    } else {
+	my $auth_key = $userinfo->{webLoginKey};
+	my $redirect_url = &_create_client_login_trigger($param, $auth_key); 
+	&OpenUGAI::Util::Log("login", "redirect", $redirect_url);
+	return ( $redirect_url, "redirect" );
+    }
 }
 
 # ##################
 # OpenID authentication request
-sub OpenIDRequestHandler {
+sub _openid_request_handler {
     my $param = shift;
     my $openid = $param->{openid_identifier};
     my $csr = new Net::OpenID::Consumer(
@@ -61,13 +113,12 @@ sub OpenIDRequestHandler {
 						 delayed_return => "checkid_setup",
 						 );
     &OpenUGAI::Util::Log("login", "check_url", $check_url);
-    #&MyCGI::redirect($check_url);
-    return wantarray ? ["redirect", $check_url] : $check_url;
+    return wantarray ? ( $check_url, "redirect" ) : $check_url;
 }
 
 # ##################
 # OpenID authentication verification
-sub OpenIDVerifyHandler {
+sub _openid_verify_handler {
     my $param = shift;
     my $csr = new Net::OpenID::Consumer(
 					ua    => new LWPx::ParanoidAgent(),
@@ -83,7 +134,7 @@ sub OpenIDVerifyHandler {
 				     my $setup_url = shift;
 				     # Redirect the user to $setup_url
 				     #&MyCGI::redirect($setup_url);				     
-                                     return wantarray ? ("redirect", $setup_url) : $setup_url;
+                                     return wantarray ? ( $setup_url, "redirect" ) : $setup_url;
 				 },
 				 cancelled => sub {
 				     # Do something appropriate when the user hits "cancel" at the OP
@@ -91,7 +142,16 @@ sub OpenIDVerifyHandler {
 				 verified => sub {
 				     my $vident = shift;
 				     # Do something with the VerifiedIdentity object $vident
-				     return wantarray ? ("output", $vident) : $vident;
+				     my $extinfo;
+				     if ($OpenUGAI::Global::USE_AX) {
+					 $extinfo = $vident->extension_fields($OpenUGAI::Global::OPENID_NS_SREG_1_1);
+				     } else {
+					 $extinfo = $vident->extension_fields($OpenUGAI::Global::OPENID_NS_AX_1_0);			
+				     }
+				     my $userinfo = &_openid_verified_ok($extinfo);
+				     my $auth_key = $userinfo->{webLoginKey};
+				     my $redirect_url = &_create_client_login_trigger($userinfo, $auth_key); 
+				     return wantarray ? ( $redirect_url, "redirect" ) : $vident;
 				 },
 				 error => sub {
 				     my $err = shift;
@@ -101,8 +161,8 @@ sub OpenIDVerifyHandler {
 }
 
 # ##################
-# shared method
-sub OpenIDVerifyOK {
+# private method
+sub _openid_verified_ok {
     my $param = shift;
     my $firstname = "User";
     my $lastname = "@ OpenID";
@@ -421,105 +481,16 @@ sub _make_r_string {
     return "[" . join(",", @params) . "]";
 }
 
-# #################
-# OpenID Function
-sub _check_openid_param {
-    my $params = shift;
-    # @@@ not implemented
-    return 1;
-}
-
-sub OpenID_PRELogin
-{
-    my $params = shift;
-    my %response = ();
-    # openid param validation
-    if (!&_check_openid_param($params)) {
-	$response{error} = "invalid openid parameter";
-	return \%response;
-    }
-    # select user (check existence of the user)
-    my $user = undef;
-    eval {
-	$user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
-    };
-    if ($@) {
-	$response{error} = $@; # will be redirect to user login page
-	return \%response;
-    }
-    
-    # contact with Grid server
-    my %grid_request_params = (
-	region_handle => $user->{homeRegion},
-	authkey => undef
-	);
-    my $grid_response = &OpenUGAI::Util::XMLRPCCall($OpenUGAI::Global::GRID_SERVER_URL, "simulator_data_request", \%grid_request_params);
-    my $region_server_url = "http://" . $grid_response->{sim_ip} . ":" . $grid_response->{sim_port};
-    # contact with Region server
-    my $session_id = &OpenUGAI::Util::GenerateUUID;
-    my $secure_session_id = &OpenUGAI::Util::GenerateUUID;
-    my $circuit_code = int(rand() * 1000000000); # just a random integer
-    my $caps_id = &OpenUGAI::Util::GenerateUUID;
-    my %region_request_params = (
-	session_id => $session_id,
-	secure_session_id => $secure_session_id,
-	firstname => $user->{username},
-	lastname => $user->{lastname},
-	agent_id => $user->{UUID},
-	circuit_code => $circuit_code,
-	startpos_x => $user->{homeLocationX},
-	startpos_y => $user->{homeLocationY},
-	startpos_z => $user->{homeLocationZ},
-	regionhandle => $user->{homeRegion},
-	caps_path => $caps_id,
-	);
-    my $region_response = &OpenUGAI::Util::XMLRPCCall($region_server_url, "expect_user", \%region_request_params);
-    # contact with Inventory server
-    my $inventory_data = &_create_inventory_data($user->{UUID});
-    # return to client
-    %response = (
-	# login info
-	login => "true",
-	session_id => $session_id,
-	secure_session_id => $secure_session_id,
-	# agent
-	first_name => $user->{username},
-	last_name => $user->{lastname},
-	agent_id => $user->{UUID},
-	agent_access => "M", # ??? from linden => M & hard coding in opensim
-	# grid
-	start_location => $params->{start},
-	sim_ip => $grid_response->{sim_ip},
-	sim_port => $grid_response->{sim_port},
-	#sim_port => 9001,
-	region_x => $grid_response->{region_locx} * 256,
-	region_y => $grid_response->{region_locy} * 256,
-	# other
-	inventory_host => undef, # inv13-mysql
-	circuit_code => $circuit_code,
-	message => "Do you fear the wolf ?",
-	seconds_since_epoch => time,
-	seed_capability => $region_server_url . "/CAPS/" . $caps_id . "0000/", # https://sim2734.agni.lindenlab.com:12043/cap/61d6d8a0-2098-7eb4-2989-76265d80e9b6
-	look_at => &_make_r_string($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ}),
-	home => &_make_home_string(
-	    [$grid_response->{region_locx} * 256, $grid_response->{region_locy} * 256],
-	    [$user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationX}],
-	    [$user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ}]),
-	"inventory-skeleton" => $inventory_data->{InventoryArray},
-	"inventory-root" => [ { folder_id => $inventory_data->{RootFolderID} } ],
-	"event_notifications" => \@OpenUGAI::UserServer::Config::event_notifications,
-	"event_categories" => \@OpenUGAI::UserServer::Config::event_categories,
-	"global-textures" => \@OpenUGAI::UserServer::Config::global_textures,
-	"inventory-lib-owner" => \@OpenUGAI::UserServer::Config::inventory_lib_owner,
-	"inventory-skel-lib" => \@OpenUGAI::UserServer::Config::inventory_skel_lib, # hard coding in OpenUGAI
-	"inventory-lib-root" => \@OpenUGAI::UserServer::Config::inventory_lib_root,
-	"classified_categories" => \@OpenUGAI::UserServer::Config::classified_categories,
-	"login-flags" => \@OpenUGAI::UserServer::Config::login_flags,
-	"initial-outfit" => \@OpenUGAI::UserServer::Config::initial_outfit,
-	"gestures" => \@OpenUGAI::UserServer::Config::gestures,
-	"ui-config" => \@OpenUGAI::UserServer::Config::ui_config,
-	);
-    return \%response;
+sub _create_client_login_trigger {
+    my ($param, $auth_key) = @_;
+    my $location = $param->{location} || "last";
+    my $command = $param->{command} || "login";
+    my $secondlife_url = "secondlife:///app/" . $command . "?first_name=" .
+	$param->{username} ."&last_name=" . $param->{lastname} .
+	"&location=" . $location . "&grid=Other&web_login_key=" .
+	$auth_key;
+    return "about:blank?redirect-http-hack=" .
+	&OpenUGAI::Util::URLEncode($secondlife_url);
 }
 
 1;
