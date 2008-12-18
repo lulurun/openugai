@@ -8,11 +8,13 @@ use OpenUGAI::Global;
 use OpenUGAI::Util;
 
 our %SQL = (
-    select_asset_by_uuid =>
-    "SELECT * FROM assets WHERE id=?",
-    insert_asset =>
-    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)"
-    );
+	    select_asset_by_uuid =>
+	    "SELECT * FROM assets WHERE id=?",
+	    insert_asset =>
+	    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)"
+	    delete_asset =>
+	    "DELETE FROM assets WHERE id=?",
+	    );
 
 our @ASSETS_COLUMNS = (
     "name",
@@ -71,6 +73,21 @@ sub saveAsset {
     eval {
 	my $st = new Statement($conn, $sql);
 	$result = $st->exec(@asset_args);
+    };
+    if ($@) {
+	Carp::croak("MySQL statement failed: $sql -> " . $@);	
+    }
+    return $result;
+}
+
+sub delAsset {
+    my ($this, $uuid) = @_;
+    my $conn = $this->{Connection};
+    my $result = undef;
+    my $sql = $SQL{delete_asset};
+    eval {
+	my $st = new Statement($conn, $sql);
+	$result = $st->exec($uuid);
     };
     if ($@) {
 	Carp::croak("MySQL statement failed: $sql -> " . $@);	

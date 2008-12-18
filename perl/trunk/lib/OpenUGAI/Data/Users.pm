@@ -4,6 +4,8 @@ use strict;
 use OpenUGAI::DBData;
 
 our %SQL = (
+    select_all_users =>
+    "select * from users",
     select_user_by_name =>
     "select * from users where lcase(username)=? and lcase(lastname)=?",
     select_user_by_uuid =>
@@ -15,7 +17,7 @@ our %SQL = (
     get_avatar_appearance =>
     "select * from avatarappearance where Owner=?",
     select_agent_by_uuid =>
-    "select * from agents",
+    "select * from agents where UUID=?",
     insert_agent =>
     "REPLACE INTO agents VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     );
@@ -119,6 +121,11 @@ sub updateUserByUUID {
     }
     push @params, shift @params;
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_user_by_uuid}, \@params);
+}
+
+sub getAllUsers {
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_all_users});
+    return $res;
 }
 
 1;

@@ -10,6 +10,17 @@ our %SQL = (
     "replace into avatarappearance values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     update_avatar_appearance_raw_data =>
     "replace into avatarappearance values(?,?,X?,X?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    get_avatar_attachment =>
+    "select * from avatarattachments where uuid=?",
+    update_avatar_attachment =>
+    "replace into avatarattachments values(?,?,?,?)",
+);
+
+our @ATTACHMENT_COLUMNS = (
+   "UUID",
+   "attachpoint",
+   "item",
+   "asset",
 );
 
 our @APPEARANCE_COLUMNS = (
@@ -44,8 +55,27 @@ our @APPEARANCE_COLUMNS = (
     "Underpants_Asset",
     "Skirt_Item",
     "Skirt_Asset",
-    );
+);
+# #############
+# Attachment
+sub SelectAttachment {
+    my $uuid = shift;
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_avatar_attachment}, $uuid);
+    return $res;
+}
 
+sub UpdateAttachment {
+    my $attachment = shift;
+    my @args = ();
+    foreach( @ATTACHMENT_COLUMNS ) {
+	push @args, $attachment->{$_}; # TODO: OK ???
+    }
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_attachment}, \@args);
+    return $res;
+}
+
+# #############
+# Appearance
 sub SelectAppearance {
     my $owner = shift;
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_avatar_appearance}, $owner);

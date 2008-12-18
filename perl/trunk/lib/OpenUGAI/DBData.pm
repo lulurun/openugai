@@ -19,7 +19,11 @@ sub getSimpleResult {
     eval {
 	$dbh = &DBHandler::getConnection($OpenUGAI::Global::DSN, $OpenUGAI::Global::DBUSER, $OpenUGAI::Global::DBPASS);
 	my $st = new Statement($dbh, $sql);
-	$result = $st->exec(@db_args);
+	if ($args) { # TODO: WD did this
+	    $result = $st->exec(@db_args);
+	} else {
+	    $result = $st->exec();	    
+	}
     };
     if ($@) {
 	Carp::croak("getsimpleresult failed: $sql -> " . $@);	

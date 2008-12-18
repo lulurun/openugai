@@ -13,7 +13,7 @@ sub StartUp {
     };
     if ($@) {
 	$AssetStorage = undef;
-	Cap::croak("can not start AssetServer: $@");
+	Carp::croak("can not start AssetServer: $@");
     }
 }
 
