@@ -11,7 +11,7 @@ our %SQL = (
 	    select_asset_by_uuid =>
 	    "SELECT * FROM assets WHERE id=?",
 	    insert_asset =>
-	    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)"
+	    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)",
 	    delete_asset =>
 	    "DELETE FROM assets WHERE id=?",
 	    );
