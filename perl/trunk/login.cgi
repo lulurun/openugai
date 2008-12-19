@@ -23,10 +23,8 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
     if (!$postdata) {
 	Carp::croak("no post data");
     } else {
-	&OpenUGAI::Util::Log("login", "request", $postdata);
 	my $xmlrpc = new XML::RPC();
 	my $response = $xmlrpc->receive($postdata, \&OpenUGAI::LoginServer::DispatchXMLRPCHandler);
-	&OpenUGAI::Util::Log("login", "response", $response);
 	&MyCGI::outputXml("utf-8", $response);
     }
 }

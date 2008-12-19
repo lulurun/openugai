@@ -69,7 +69,6 @@ sub _login_from_web_page {
     } else {
 	my $auth_key = $userinfo->{webLoginKey};
 	my $redirect_url = &_create_client_login_trigger($param, $auth_key); 
-	&OpenUGAI::Util::Log("login", "redirect", $redirect_url);
 	return ( $redirect_url, "redirect" );
     }
 }
@@ -86,8 +85,6 @@ sub _openid_request_handler {
 					);
 
     my $claimed_identity = $csr->claimed_identity($openid);
-    &OpenUGAI::Util::Log("login", "cident", Data::Dump::dump($claimed_identity));
-    &OpenUGAI::Util::Log("login", "cident->version", $claimed_identity->protocol_version);
     if (!$claimed_identity) {
 	Carp::croak("not a valid openid");
     }
@@ -112,7 +109,6 @@ sub _openid_request_handler {
 						 trust_root => $OpenUGAI::Global::OPENID_TRUST_ROOT_URL,
 						 delayed_return => "checkid_setup",
 						 );
-    &OpenUGAI::Util::Log("login", "check_url", $check_url);
     return wantarray ? ( $check_url, "redirect" ) : $check_url;
 }
 
@@ -238,8 +234,6 @@ sub _login_to_simulator {
     my @start_location;
     my @start_lookat;
     if ($params->{start} eq "last") {
-	&OpenUGAI::Util::Log("test", "login_look_at", $agent);
-
 	if ($agent->{currentHandle}) {
 	    $region_handle = $agent->{currentHandle};
 	} else {
@@ -298,8 +292,6 @@ sub _login_to_simulator {
         user_server_url => $OpenUGAI::Global::USER_SERVER_URL,
 	);
     # TODO: using $internal_server_url is a temporary solution
-    &OpenUGAI::Util::Log("user", "expect_user", Data::Dump::dump(\%region_request_params));
-    &OpenUGAI::Util::Log("user", "internal_server", $internal_server_url);
     my $region_response = undef;
     eval {
     	$region_response = &OpenUGAI::Util::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);

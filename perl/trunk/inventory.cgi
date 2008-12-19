@@ -17,15 +17,13 @@ if ($request_uri =~ /([^\/]+)\/$/) {
 
 my $param = &MyCGI::getParam();
 my $post_data = $param->{'POSTDATA'};
-&OpenUGAI::Util::Log("inventory", "request", $request_uri, $post_data);
 my $response = "";
 eval {
     $response = &OpenUGAI::InventoryServer::DispatchRestHandler($request_method, $post_data);
 };
 if ($@) {
-    $response = "<ERROR>$@</ERROR>";
+    $response = "<ERROR>$@</ERROR>"; # TODO @@@ need a better error response
 }
-&OpenUGAI::Util::Log("inventory", "response", $response);
 &MyCGI::outputXml("utf-8", $response);
 
 

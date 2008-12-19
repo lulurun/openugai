@@ -11,8 +11,8 @@ require "config.pl";
 # TODO: ERROR code
 # MEMO: AssetServer is a internal server *NOW*, need not to show a guide
 my $param = &MyCGI::getParam();
-
 my $response = "<ERROR />";
+
 if ($ENV{REQUEST_METHOD} eq "POST") {
     my $request = $param->{'POSTDATA'};
 #	&OpenUGAI::Util::Log("asset", "request", $ENV{REQUEST_URI}, $request);
