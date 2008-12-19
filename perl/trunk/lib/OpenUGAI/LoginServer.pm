@@ -292,7 +292,7 @@ sub _login_to_simulator {
 	startpos_z => $start_location[2],
 	regionhandle => $region_handle,
 	caps_path => $caps_id,
-	user_server_url => "http://192.168.0.150/perl/trunk/user.cgi", # TODO: @@@ read from config
+        user_server_url => $OpenUGAI::Global::USER_SERVER_URL,
 	);
     # TODO: using $internal_server_url is a temporary solution
     &OpenUGAI::Util::Log("user", "expect_user", Data::Dump::dump(\%region_request_params));
@@ -330,16 +330,16 @@ sub _login_to_simulator {
 	first_name => $user->{username},
 	last_name => $user->{lastname},
 	agent_id => $user->{UUID},
-	agent_access => "M", # ??? from linden => M & hard coding in opensim
+	agent_access => "M", # TODO @@@ What's this ? -  from linden => M & hard coding in opensim
 	# grid
 	start_location => $params->{start},
 	sim_ip => $grid_response->{sim_ip},
 	sim_port => $grid_response->{sim_port},
-	#sim_port => 9001, # TODO: hack for testing another region server
+	#sim_port => 9001, # TODO: hack for testing fanni
 	region_x => $grid_response->{region_locx} * 256,
 	region_y => $grid_response->{region_locy} * 256,
 	# other
-	inventory_host => undef, # inv13-mysql
+	inventory_host => undef, # TODO @@@ What's this ? - "inv13-mysql" - return by SL loginserver, one of SL inventoryservers, I think
 	circuit_code => $circuit_code,
 	message => "Do you fear the wolf ?",
 	seconds_since_epoch => time,
@@ -351,6 +351,8 @@ sub _login_to_simulator {
 	    [ $start_lookat[0], $start_lookat[1], $start_lookat[2] ]),
 	"inventory-skeleton" => $inventory_data->{InventoryArray},
 	"inventory-root" => [ { folder_id => $inventory_data->{RootFolderID} } ],
+	# TODO @@@ What's this ?
+	# BEGIN copied from opensim, I do not know what they are
 	"event_notifications" => \@OpenUGAI::UserServer::Config::event_notifications,
 	"event_categories" => \@OpenUGAI::UserServer::Config::event_categories,
 	"global-textures" => \@OpenUGAI::UserServer::Config::global_textures,
@@ -362,6 +364,8 @@ sub _login_to_simulator {
 	"initial-outfit" => \@OpenUGAI::UserServer::Config::initial_outfit,
 	"gestures" => \@OpenUGAI::UserServer::Config::gestures,
 	"ui-config" => \@OpenUGAI::UserServer::Config::ui_config,
+	# END copied from opensim
+        "asset_server_addresses" => [$OpenUGAI::Global::ASSET_SERVER_URL],
 	);
     return \%response;
 }
