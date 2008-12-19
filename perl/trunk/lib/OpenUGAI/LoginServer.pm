@@ -238,17 +238,19 @@ sub _login_to_simulator {
     my @start_location;
     my @start_lookat;
     if ($params->{start} eq "last") {
+	&OpenUGAI::Util::Log("test", "login_look_at", $agent);
+
 	if ($agent->{currentHandle}) {
 	    $region_handle = $agent->{currentHandle};
 	} else {
 	    $region_handle = $user->{homeRegion};	    
 	}
-	if ($agent->{currentPos} =~ /<([\d\.]+),([\d\.]+),([\d\.]+)>/) {
+	if ($agent->{currentPos} =~ /<([\-\d\.]+),([\-\d\.]+),([\-\d\.]+)>/) {
 	    @start_location = ($1, $2, $3);
 	} else {
 	    @start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
 	}
-	if ($agent->{currentLookAt} =~ /<([\d\.]+),([\d\.]+),([\d\.]+)>/) {
+	if ($agent->{currentLookAt} =~ /<([\-\d\.]+),([\-\d\.]+),([\-\d\.]+)>/) {
 	    @start_lookat = ($1, $2, $3);
 	} else {
 	    @start_lookat = ($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ});
@@ -258,7 +260,8 @@ sub _login_to_simulator {
 	@start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
 	@start_lookat = ($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ});
     } else {
-	# url login; # TODO @@@ parse opensim url
+	# direct login by specifing an URL: opensim://loginserver/region/x/y/z
+        # TODO @@@ parse opensim url
 	$region_handle = $user->{homeRegion};
 	@start_location = ($user->{homeLocationX}, $user->{homeLocationY}, $user->{homeLocationZ});
 	@start_lookat = ($user->{homeLookAtX}, $user->{homeLookAtY}, $user->{homeLookAtZ});

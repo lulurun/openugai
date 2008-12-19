@@ -15,7 +15,7 @@ my %SQL = (
     "sessionID=?, secureSessionID=?, currentPos=?, loginTime=?, where UUID=?",
     agent_logoff =>
     "update agents set agentOnline=0, currentHandle=?, currentRegion=?," .
-    "currentPos=?, logoutTime=? where UUID=?",
+    "currentPos=?, currentLookAt=?, logoutTime=? where UUID=?",
     set_online_status =>
     "update agents set agentOnline=? where UUID=?",
     );
