@@ -43,6 +43,7 @@ sub StartUp {
 sub DispatchXMLRPCHandler {
     my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
     if ($XMLRPCHandlers{$methodname}) {
+	&OpenUGAI::Util::Log("user", "Dispatch", $methodname);
 	return $XMLRPCHandlers{$methodname}->(@param);
     }
     Carp::croak("unknown xmlrpc method");
@@ -88,6 +89,7 @@ sub _update_user_current_region {
 
 sub _get_avatar_appearance {
     my $params = shift;
+    &OpenUGAI::Util::Log("user", "get_avatar", $params);
     if (!$params->{owner}) {
 	return &_make_error_response("unknown_avatar", "You must have been eaten by a wolf - onwer needed");
     }
@@ -126,6 +128,7 @@ sub _get_avatar_appearance {
 
 sub _update_avatar_appearance {
     my $params = shift;
+    &OpenUGAI::Util::Log("user", "update_avatar", $params);
     if (!$params->{owner}) {
 	return &_make_error_response("unknown_avatar", "You must have been eaten by a wolf - onwer needed");
     }

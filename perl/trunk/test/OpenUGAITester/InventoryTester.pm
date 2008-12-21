@@ -80,14 +80,13 @@ sub _get_inventory {
 	my $url = shift || $OpenUGAITester::Config::INVENTORY_SERVER_URL;
 	my $uuid = shift;
 	my %req_obj = (
-	    SessionID => "e5aabad0-8b15-11dd-be05-b8697d69d33a",
-	    AvatarID => "948b1022-ff13-4519-82d0-9177ab1d9dd9",
-	    Body => "948b1022-ff13-4519-82d0-9177ab1d9dd9",
+	    Body => $uuid,
 	);
 	my $serializer = new XML::Serializer("RestSessionObjectOfGuid", \%req_obj);
 	my $post_data = $serializer->to_string(XML::Serializer::WITH_HEADER);
 	my $res = &OpenUGAI::Util::HttpRequest("POST", $url . "/GetInventory/", $post_data) . "\n";
-	return $res;
+	my $res_obj = &OpenUGAI::Util::XML2Obj($res);
+	return $res_obj;
 }
 
 sub _create_inventory {

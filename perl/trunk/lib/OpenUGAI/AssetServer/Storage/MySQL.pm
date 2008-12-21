@@ -3,7 +3,7 @@ package OpenUGAI::AssetServer::Storage::MySQL;
 use strict;
 use MIME::Base64;
 use XML::Simple;
-use DBHandler;
+use OpenUGAI::DBData;
 use OpenUGAI::Global;
 use OpenUGAI::Util;
 
@@ -11,7 +11,7 @@ our %SQL = (
 	    select_asset_by_uuid =>
 	    "SELECT * FROM assets WHERE id=?",
 	    insert_asset =>
-	    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)",
+	    "INSERT INTO assets VALUES (?,?,?,?,?,?,?,?,?)",
 	    delete_asset =>
 	    "DELETE FROM assets WHERE id=?",
 	    );
@@ -24,31 +24,21 @@ our @ASSETS_COLUMNS = (
     "temporary",
     "data",
     "id",
+    "create_time",
+    "access_time",
     );
 
 sub new {
     my $this = shift;
-    my %fields = (
-	Connection => &DBHandler::getConnection($OpenUGAI::Global::DSN,
-						$OpenUGAI::Global::DBUSER,
-						$OpenUGAI::Global::DBPASS),
-	);
-    &OpenUGAI::Util::Log("startup", "AssetServer::MySQL", "initialized");
-    return bless \%fields , $this;
+    # Do nothing here
+    # MySql Connection is managed by Apache::DBI
+    return bless {};
 }
 
 sub getAsset {
     my ($this, $uuid) = @_;
-    my $conn = $this->{Connection};
     my $result = undef;
-    my $sql = $SQL{select_asset_by_uuid};
-    eval {
-	my $st = new Statement($conn, $sql);
-	$result = $st->exec($uuid);
-    };
-    if ($@) {
-	Carp::croak("MySQL statement failed: $sql -> " . $@);	
-    }
+    $result = &OpenUGAI::DBObject::SimpleQuery( $SQL{select_asset_by_uuid}, [$uuid] );
     if ($result) {
 	my $count = @$result;
 	if ($count > 0) {
@@ -67,20 +57,12 @@ sub saveAsset {
     foreach(@ASSETS_COLUMNS) {
 	push @asset_args, $asset->{$_};
     }
-    my $conn = $this->{Connection};
     my $result = undef;
-    my $sql = $SQL{insert_asset};
-    eval {
-	my $st = new Statement($conn, $sql);
-	$result = $st->exec(@asset_args);
-    };
-    if ($@) {
-	Carp::croak("MySQL statement failed: $sql -> " . $@);	
-    }
+    $result = &OpenUGAI::DBObject::SimpleQuery( $SQL{select_asset_by_uuid}, \@asset_args);
     return $result;
 }
 
-sub delAsset {
+sub delelteAsset {
     my ($this, $uuid) = @_;
     my $conn = $this->{Connection};
     my $result = undef;
@@ -131,6 +113,5 @@ sub _xml_to_asset {
 	);
     return \%asset;
 }
-
 
 1;

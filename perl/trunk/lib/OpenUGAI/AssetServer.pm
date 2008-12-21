@@ -23,10 +23,9 @@ sub StartUp {
 
 sub getAsset {
     my ($asset_id, $param) = @_;
-    # TODO: how to TODO ?
     if (!$AssetStorage) {
 	OpenUGAI::Util::Log("asset", "startup", "AssetStorage is NULL !!");
-	&StartUp;
+	# &StartUp; # avoid infinite loop
     }
     # get asset
     return $AssetStorage->getAsset($asset_id);
@@ -34,10 +33,9 @@ sub getAsset {
 
 sub saveAsset {
     my $asset_xml = shift;
-    # TODO: how to TODO ?
     if (!$AssetStorage) {
 	OpenUGAI::Util::Log("asset", "startup", "AssetStorage is NULL !!");
-	&StartUp;
+	# &StartUp; # avoid infinite loop
     }
     # save asset, they never update asset
     $AssetStorage->saveAsset($asset_xml);

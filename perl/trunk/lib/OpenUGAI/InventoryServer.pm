@@ -24,6 +24,7 @@ sub StartUp {
 
 sub DispatchRestHandler {
     my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
+    &OpenUGAI::Util::Log("inventory", "Dispatch", $methodname);
     if ($RestHandlers{$methodname}) {
 	return $RestHandlers{$methodname}->(@param);
     }
@@ -35,9 +36,10 @@ sub DispatchRestHandler {
 sub _get_inventory {
     my $post_data = shift;
     my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    &OpenUGAI::Util::Log("inventory", "get_inventory_request", $request_obj);
 
     # secure inventory, but do nothing for now
-    &_validate_session($request_obj);
+    #&_validate_session($request_obj);
 
     my $uuid = $request_obj->{Body};
     my $inventry_folders = &OpenUGAI::Data::Inventory::getUserInventoryFolders($uuid);
@@ -53,14 +55,13 @@ sub _get_inventory {
 	push @response_items, $item;
     }
     my $response_obj = { # TODO much duplicated data ***
-	_folders => { InventoryFolderBase => \@response_folders },
-	_allItems => { InventoryItemBase => \@response_items },
-	_userID => { Guid => $uuid },
 	Folders => { InventoryFolderBase => \@response_folders },
-	AllItems => { InventoryItemBase => \@response_items },
 	UserID => { Guid => $uuid },
 	Items => { InventoryItemBase => \@response_items },
     };
+
+    &OpenUGAI::Util::Log("inventory", "get_inventory_response", $response_obj);
+
     my $serializer = new XML::Serializer( $response_obj, "InventoryCollection");
     return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
 }
@@ -197,6 +198,12 @@ sub _convert_to_response_item {
 	CurrentPermissions => $item->{inventoryCurrentPermissions},
 	BasePermissions => $item->{inventoryBasePermissions},
 	EveryOnePermissions => $item->{inventoryEveryOnePermissions},
+	CreationDate => $item->{creationDate},
+	Flags => $item->{flags},
+	GroupID => $item->{groupID},
+	GroupOwned => $item->{groupOwned},
+	SalePrice => $item->{salePrice},
+	SaleType => $item->{saleType},
     };
     return $ret;
 }
