@@ -4,18 +4,18 @@ use strict;
 use CGI;
 
 sub getParam {
-	my $cgi;
-	if ($ARGV[0]) {
-		$cgi = new CGI($ARGV[0]);
-	} else {
-		$cgi = new CGI;
-	}
-	my @param_names = $cgi->param();
-	my %param = ();
-	foreach (@param_names) {
-		$param{$_} = $cgi->param($_);
-	}
-	return \%param;
+    my $cgi;
+    if ($ARGV[0]) {
+	$cgi = new CGI($ARGV[0]);
+    } else {
+	$cgi = new CGI;
+    }
+    my @param_names = $cgi->param();
+    my %param = ();
+    foreach (@param_names) {
+	$param{$_} = $cgi->param($_);
+    }
+    return \%param;
 }
 
 sub getCookie {

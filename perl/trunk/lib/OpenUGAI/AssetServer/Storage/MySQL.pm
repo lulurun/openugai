@@ -29,13 +29,19 @@ our @ASSETS_COLUMNS = (
     );
 
 sub new {
-    my $this = shift;
-    # Do nothing here
+    my ($this, $option) = @_;
+    # config.presentation
+    my $presen_class = $option->{presentation} || Carp::croak("no presentation class");
+
+    my %fields = (
+		  presen_class => $presen_class,
+		  );
+    # Do not get connection here
     # MySql Connection is managed by Apache::DBI
     return bless {};
 }
 
-sub getAsset {
+sub fatchAsset {
     my ($this, $uuid) = @_;
     my $result = undef;
     $result = &OpenUGAI::DBObject::SimpleQuery( $SQL{select_asset_by_uuid}, [$uuid] );
@@ -50,7 +56,7 @@ sub getAsset {
     return ""; # TODO: failed xml
 }
 
-sub saveAsset {
+sub storeAsset {
     my ($this, $asset_xml) = @_;
     my $asset = &_xml_to_asset($asset_xml);
     my @asset_args;
@@ -77,41 +83,5 @@ sub delelteAsset {
     return $result;
 }
 
-# ##################
-# private functions
-sub _asset_to_xml {
-    my $asset = shift;
-    return "" if !$asset;
-    my $asset_data = &MIME::Base64::encode_base64($asset->{data});
-    return << "ASSET_XML";
-<AssetBase>
-    <Data>$asset_data</Data>
-    <FullID>
-        <Guid>$asset->{id}</Guid>
-    </FullID>
-    <Type>$asset->{assetType}</Type>
-    <Name>$asset->{name}</Name>
-    <Description>$asset->{description}</Description>
-    <Local>$asset->{local}</Local>
-    <Temporary>$asset->{temporary}</Temporary>
-</AssetBase>
-ASSET_XML
-}
-
-sub _xml_to_asset {
-    my $xml = shift;
-    my $xs = new XML::Simple();
-    my $obj = $xs->XMLin($xml);
-    my %asset = (
-	"id" => $obj->{FullID}->{Guid},
-	"name" => $obj->{Name},
-	"description" => $obj->{Description},
-	"assetType" => $obj->{Type},
-	"local" => $obj->{Local},
-	"temporary" => $obj->{Temporary},
-	"data" => &MIME::Base64::decode_base64($obj->{Data}),
-	);
-    return \%asset;
-}
-
 1;
+
