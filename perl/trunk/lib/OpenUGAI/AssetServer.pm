@@ -7,7 +7,6 @@ use OpenUGAI::SimpleRestService;
 our @ISA = qw(OpenUGAI::SimpleRestService);
 use OpenUGAI::AssetServer::Storage;
 use OpenUGAI::AssetServer::Presentation;
-use MyCGI;
 
 our $AssetStorage;
 our $AssetPresentation;
