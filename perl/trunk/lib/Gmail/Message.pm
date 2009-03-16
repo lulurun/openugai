@@ -1,4 +1,4 @@
-package OpenUGAI::Gmail::Message;
+package Gmail::Message;
 
 use strict;
 use Carp;
@@ -17,9 +17,9 @@ sub ParseMailPage {
 	next if ($script_text !~ /^D\((.+)\);$/);
 	$page_script .= $script_text;
     }
-    my $script_parser = new OpenUGAI::Gmail::Message::ScriptParser();
+    my $script_parser = new Gmail::Message::ScriptParser();
     my $mail_data = $script_parser->getMailData($page_script);
-    my $mail = new OpenUGAI::Gmail::Message::Detail($mail_data->{di});
+    my $mail = new Gmail::Message::Detail($mail_data->{di});
     return $mail;
 }
 
@@ -35,22 +35,22 @@ sub ParseMailListPage {
 	next if ($script_text !~ /^D\((.+)\);$/);
 	$page_script .= $script_text;
     }
-    my $script_parser = new OpenUGAI::Gmail::Message::ScriptParser();
+    my $script_parser = new Gmail::Message::ScriptParser();
     my $mail_data = $script_parser->getMailData($page_script);
     my @mail_list = ();
     foreach my $mail (@{$mail_data->{t}}) {
-	push @mail_list, new OpenUGAI::Gmail::Message::Summary($mail);
+	push @mail_list, new Gmail::Message::Summary($mail);
     }
     return \@mail_list;
 }
 
-package OpenUGAI::Gmail::Message::Detail;
+package Gmail::Message::Detail;
 
 sub ParseAttachments {
     my ($att_objs) = @_;
     my @attachments = ();
     foreach (@$att_objs) {
-	push @attachments, new OpenUGAI::Gmail::Message::Attachment($_);
+	push @attachments, new Gmail::Message::Attachment($_);
     }
     return \@attachments;
 }
@@ -79,7 +79,7 @@ sub getAttInfo {
     return $att;
 }
 
-package OpenUGAI::Gmail::Message::Attachment;
+package Gmail::Message::Attachment;
 
 sub new {
     my ($this, $att_obj) = @_;
@@ -94,7 +94,7 @@ sub new {
     bless \%fields, $this;
 }
 
-package OpenUGAI::Gmail::Message::Summary;
+package Gmail::Message::Summary;
 
 sub new {
     my ($this, $params) = @_;
@@ -121,7 +121,7 @@ sub new {
     bless \%fields, $this;
 }
 
-package OpenUGAI::Gmail::Message::Compose;
+package Gmail::Message::Compose;
 
 our $MIME_MULTIPART_BOUNDARY = "openugai_msgpart_";
 
@@ -184,7 +184,7 @@ sub getBody {
     return $body;
 }
 
-package OpenUGAI::Gmail::Message::ScriptParser;
+package Gmail::Message::ScriptParser;
 
 sub new {
     my $this = shift;

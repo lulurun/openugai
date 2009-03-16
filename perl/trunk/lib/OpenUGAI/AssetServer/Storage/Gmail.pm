@@ -1,10 +1,10 @@
 package OpenUGAI::AssetServer::Storage::Gmail;
 
 use strict;
-use OpenUGAI::Global;
-use OpenUGAI::Gmail::Account;
-use OpenUGAI::Util;
 use XML::Simple;
+use Gmail::Account;
+use OpenUGAI::Global;
+use OpenUGAI::Util;
 
 our $GMAIL_ACCOUNT = "luluasset";
 our $GMAIL_PASSWORD = "1u1u\@sset";

@@ -1,4 +1,4 @@
-package OpenUGAI::Gmail::Account;
+package Gmail::Account;
 
 use strict;
 use Carp;
@@ -6,13 +6,13 @@ use LWP::UserAgent;
 use HTTP::Headers;
 use HTTP::Cookies;
 
-use OpenUGAI::Gmail::Message;
+use Gmail::Message;
 
 use Data::Dump;
 
 our $GMAIL_URL_LOGIN = "https://www.google.com/accounts/ServiceLoginBoxAuth";
 our $GMAIL_URL_GMAIL = "https://mail.google.com/mail/?ui=1&";
-our $USER_AGENT = "OpenUGAI::AssetServer::Gmail";
+our $USER_AGENT = "AssetServer::Gmail";
 our $TIMEOUT = 5;
 our $COOKIE_CACHE = ".cookies";
 
@@ -79,7 +79,7 @@ sub sendMessage {
 	$this->login();
     }
     my $at = $this->_get_GMAILAT();
-    my $msg = new OpenUGAI::Gmail::Message::Compose($to, $subject, $body, $at, $opt);
+    my $msg = new Gmail::Message::Compose($to, $subject, $body, $at, $opt);
     my $mheader = $msg->getHeader();
     my $mbody = $msg->getBody();
     # TODO: $mbody needs to be encoded
@@ -117,7 +117,7 @@ sub getMessage {
 	my $req = HTTP::Request->new("GET", $query_url);
 	my $pagedata = $this->_request_page($req);
 	# TODO: not message"s"
-	$messages = OpenUGAI::Gmail::Message::ParseMailPage($pagedata);	
+	$messages = Gmail::Message::ParseMailPage($pagedata);	
     } elsif ($opt->{folder}) {
 	my %query_data = (
 			  start => $opt->{start} || 0,
@@ -127,7 +127,7 @@ sub getMessage {
 	my $query_url = $GMAIL_URL_GMAIL . &_make_req_string(\%query_data);
 	my $req = HTTP::Request->new("GET", $query_url);
 	my $pagedata = $this->_request_page($req);
-	$messages = OpenUGAI::Gmail::Message::ParseMailListPage($pagedata);
+	$messages = Gmail::Message::ParseMailListPage($pagedata);
     } elsif ($opt->{label}) {
     }
     return $messages;
@@ -144,8 +144,7 @@ sub getAttachment {
     my $query_url = $GMAIL_URL_GMAIL . &_make_req_string(\%query_data);
     my $req = HTTP::Request->new("GET", $query_url);
     my $pagedata = $this->_request_page($req);
-    print $pagedata . "\n\n";
-#    $messages = OpenUGAI::Gmail::Message::ParseMailPage($pagedata);	
+#    $messages = Gmail::Message::ParseMailPage($pagedata);	
 }
 
 sub _request_page {

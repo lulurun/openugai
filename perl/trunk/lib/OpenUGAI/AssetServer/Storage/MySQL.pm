@@ -34,11 +34,10 @@ sub new {
     my $presen_class = $option->{presentation} || Carp::croak("no presentation class");
 
     my %fields = (
-		  presen_class => $presen_class,
 		  );
     # Do not get connection here
     # MySql Connection is managed by Apache::DBI
-    return bless {};
+    return bless \%fields, $this;
 }
 
 sub fatchAsset {
@@ -48,17 +47,14 @@ sub fatchAsset {
     if ($result) {
 	my $count = @$result;
 	if ($count > 0) {
-	    my $xml = &_asset_to_xml($result->[0]);
-	    return $xml;
+	    return $reault->[0];
 	}
     }
-    Carp::croak("can not find asset $uuid");
-    return ""; # TODO: failed xml
+    return 0;
 }
 
 sub storeAsset {
-    my ($this, $asset_xml) = @_;
-    my $asset = &_xml_to_asset($asset_xml);
+    my ($this, $asset) = @_;
     my @asset_args;
     foreach(@ASSETS_COLUMNS) {
 	push @asset_args, $asset->{$_};
@@ -68,6 +64,7 @@ sub storeAsset {
     return $result;
 }
 
+# TODO @@@ !!! todo
 sub delelteAsset {
     my ($this, $uuid) = @_;
     my $conn = $this->{Connection};
