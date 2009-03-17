@@ -1,10 +1,7 @@
 package OpenUGAI::AssetServer::Storage::MySQL;
 
 use strict;
-use MIME::Base64;
-use XML::Simple;
 use OpenUGAI::DBData;
-use OpenUGAI::Global;
 use OpenUGAI::Util;
 
 our %SQL = (
@@ -30,24 +27,27 @@ our @ASSETS_COLUMNS = (
 
 sub new {
     my ($this, $option) = @_;
-    # config.presentation
-    my $presen_class = $option->{presentation} || Carp::croak("no presentation class");
+    my $db_info = $option->{db_info} || Carp::croak("db_info not set");
+    Carp::croak("...") unless ($db_info->{DSN} && $db_info->{DBUSER} && $db_info->{DBPASS});
+
+    # config.presentation     # not needed
+    #my $presen_class = $option->{presentation} || Carp::croak("no presentation class");
 
     my %fields = (
-		  );
-    # Do not get connection here
-    # MySql Connection is managed by Apache::DBI
+		  #presen_class => $presen_class,		  
+		  db_info => $db_info,
+    );
     return bless \%fields, $this;
 }
 
-sub fatchAsset {
-    my ($this, $uuid) = @_;
+sub fetchAsset {
+    my ($this, $id) = @_;
     my $result = undef;
-    $result = &OpenUGAI::DBObject::SimpleQuery( $SQL{select_asset_by_uuid}, [$uuid] );
+    $result = &OpenUGAI::DBData::SimpleQuery( $SQL{select_asset_by_uuid}, [$id] );
     if ($result) {
 	my $count = @$result;
 	if ($count > 0) {
-	    return $reault->[0];
+	    return $result->[0];
 	}
     }
     return 0;

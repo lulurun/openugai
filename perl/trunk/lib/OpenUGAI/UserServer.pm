@@ -14,7 +14,7 @@ use OpenUGAI::Data::Agents;
 our %XMLRPCHandlers = (
 		       "get_user_by_name" => \&_get_user_by_name,
 		       "get_user_by_uuid" => \&_get_user_by_uuid,
-		       "get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to other service or implemented in the hell.
+		       "get_avatar_appearance" => \&_get_avatar_appearance,
 		       "update_avatar_appearance" => \&_update_avatar_appearance,
 		       "update_user_current_region" => \&_update_user_current_region,
 		       "logout_of_simulator" => \&_logout_of_simulator,
