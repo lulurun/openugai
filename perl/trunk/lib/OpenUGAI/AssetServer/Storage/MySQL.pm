@@ -1,7 +1,7 @@
 package OpenUGAI::AssetServer::Storage::MySQL;
 
 use strict;
-use OpenUGAI::DBData;
+use DBHandler;
 use OpenUGAI::Util;
 
 our %SQL = (
@@ -28,23 +28,22 @@ our @ASSETS_COLUMNS = (
 sub new {
     my ($this, $option) = @_;
     my $db_info = $option->{db_info} || Carp::croak("db_info not set");
-    Carp::croak("...") unless ($db_info->{DSN} && $db_info->{DBUSER} && $db_info->{DBPASS});
-
+    my $dbh = new DBHandler($db_info);
     # config.presentation     # not needed
     #my $presen_class = $option->{presentation} || Carp::croak("no presentation class");
 
     my %fields = (
 		  #presen_class => $presen_class,		  
-		  db_info => $db_info,
+		  dbh => $dbh,
     );
     return bless \%fields, $this;
 }
 
 sub fetchAsset {
     my ($this, $id) = @_;
-    my $result = undef;
-    $result = &OpenUGAI::DBData::SimpleQuery( $SQL{select_asset_by_uuid}, [$id] );
-    if ($result) {
+    my $st = $this->{dbh}->SimpleStatement( $SQL{select_asset_by_uuid} );
+    my $result = $st->execute( [$id] );
+    if (ref $result) {
 	my $count = @$result;
 	if ($count > 0) {
 	    return $result->[0];
@@ -59,25 +58,15 @@ sub storeAsset {
     foreach(@ASSETS_COLUMNS) {
 	push @asset_args, $asset->{$_};
     }
-    my $result = undef;
-    $result = &OpenUGAI::DBObject::SimpleQuery( $SQL{select_asset_by_uuid}, \@asset_args);
-    return $result;
+    my $st = $this->{dbh}->SimpleStatement( $SQL{insert_asset} );
+    return $st->execute( @asset_args );
 }
 
 # TODO @@@ !!! todo
 sub delelteAsset {
-    my ($this, $uuid) = @_;
-    my $conn = $this->{Connection};
-    my $result = undef;
-    my $sql = $SQL{delete_asset};
-    eval {
-	my $st = new Statement($conn, $sql);
-	$result = $st->exec($uuid);
-    };
-    if ($@) {
-	Carp::croak("MySQL statement failed: $sql -> " . $@);	
-    }
-    return $result;
+    my ($this, $id) = @_;
+    my $st = $this->{dbh}->SimpleStatement( $SQL{delete_asset_by_uuid} );
+    return $st->execute( [$id] );
 }
 
 1;
