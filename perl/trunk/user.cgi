@@ -10,4 +10,3 @@ my $server = new OpenUGAI::UserServer();
 $server->init($config);
 $server->run();
 
-A

@@ -32,7 +32,6 @@ sub init {
     # not implemented
     $this->registerHandler("register_messageserver" => \&_not_implemented);
     $this->registerHandler("deregister_messageserver" => \&_not_implemented);
-    &OpenUGAI::Util::Log("grid", "init", "OK");
 }
 
 sub handler {

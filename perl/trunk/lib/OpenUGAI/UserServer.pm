@@ -6,15 +6,25 @@ use Digest::MD5;
 
 use OpenUGAI::Global;
 use OpenUGAI::Util;
-use OpenUGAI::SimpleXMLRPCService;
-our @ISA = qw(OpenUGAI::SimpleXMLRPCService);
+use OpenUGAI::XMLRPCService;
+our @ISA = qw(OpenUGAI::XMLRPCService);
 use OpenUGAI::UserServer::Config;
 use OpenUGAI::DBData::Avatar;
 use OpenUGAI::DBData::Users;
 use OpenUGAI::DBData::Agents;
 
+our $dbh;
+
 sub init {
     my $this = shift;
+    # init db
+    my $db_info = {
+	dsn => $OpenUGAI::Global::DSN,
+	user => $OpenUGAI::Global::DBUSER,
+	pass => $OpenUGAI::Global::DBPASS,
+    };
+    $dbh = new DBHandler($db_info);
+    # register handlers
     $this->registerHandler("get_user_by_name" => \&_get_user_by_name);
     $this->registerHandler("get_user_by_uuid" => \&_get_user_by_uuid);
     $this->registerHandler("get_avatar_appearance" => \&_get_avatar_appearance);
@@ -63,7 +73,7 @@ sub _logout_of_simulator {
 	    time,
 	    $params->{avatar_uuid},
 	    );
-	&OpenUGAI::Data::Agents::AgentLogoff(@args);
+	&OpenUGAI::DBData::Agents::AgentLogoff($dbh, @args);
     } else {
 	return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
     }
@@ -73,7 +83,7 @@ sub _update_user_current_region {
     my $params = shift;
     my $returnString = "FALSE";
     if ($params->{avatar_id} && $params->{region_uuid} && $params->{region_handle}) {
-	&OpenUGAI::Data::Agents::UpdateAgentCurrentRegion($params->{avatar_id},$params->{region_uuid}, $params->{region_handle});
+	&OpenUGAI::DBData::Agents::UpdateAgentCurrentRegion($dbh, $params->{avatar_id}, $params->{region_uuid}, $params->{region_handle});
 	$returnString = "TRUE";
     } else {
 	return &_make_false_response("not enough params", "You must have been eaten by a wolf");
@@ -90,7 +100,7 @@ sub _get_avatar_appearance {
     my $owner = $params->{owner};
     my %appearance = ();
     eval {
-	my $res = &OpenUGAI::Data::Avatar::SelectAppearance($owner);
+	my $res = &OpenUGAI::DBData::Avatar::SelectAppearance($dbh, $owner);
 	if ($res) {
 	    $appearance{visual_params} = RPC::XML::base64->new($res->{Visual_Params});
 	    delete $res->{Visual_Params};
@@ -98,7 +108,7 @@ sub _get_avatar_appearance {
 	    delete $res->{Texture};
 	    map { $appearance{lc($_)} = RPC::XML::string->new($res->{$_}); } keys %$res;
 	    # attachments
-	    my $attachments = &OpenUGAI::Data::Avatar::SelectAttachment($owner);
+	    my $attachments = &OpenUGAI::DBData::Avatar::SelectAttachment($dbh, $owner);
 	    my @attachment_string_list = ();
 	    my $attachment_string = "";
 	    if ($attachments) {
@@ -130,7 +140,7 @@ sub _update_avatar_appearance {
 	# TODO: also on opensim side
 	# 1. Too stupid that here always contains both appearance and attachment
 	# 2. Need to think about transaction
-	&OpenUGAI::Data::Avatar::UpdateAppearance($params);
+	&OpenUGAI::DBData::Avatar::UpdateAppearance($dbh, $params);
 	if ($params->{attachments}) {
 	    my @attachments = ();
 	    my @values = split(/,/, $params->{attachments});
@@ -143,9 +153,9 @@ sub _update_avatar_appearance {
 		    };
 	    }
 	    if (@attachments > 0) {
-		&OpenUGAI::Data::Avatar::DeleteAvatarAttachments($params->{owner});
+		&OpenUGAI::DBData::Avatar::DeleteAvatarAttachments($dbh, $params->{owner});
 		foreach (@attachments) {
-		    &OpenUGAI::Data::Avatar::UpdateAttachment($_);
+		    &OpenUGAI::DBData::Avatar::UpdateAttachment($dbh, $_);
 		}
 	    }
 	}
@@ -161,7 +171,7 @@ sub _get_user_by_name {
     
     if ($param->{avatar_name}) {
 	my ($first, $last) = split(/\s+/, $param->{avatar_name});
-	my $user = &OpenUGAI::Data::Users::getUserByName($first, $last);
+	my $user = &OpenUGAI::DBData::Users::getUserByName($dbh, $first, $last);
 	if (!$user) {
 	    return &_unknown_user_response;
 	}
@@ -175,9 +185,9 @@ sub _get_user_by_uuid {
     my $param = shift;
     
     if ($param->{avatar_uuid}) {
-	my $user = &OpenUGAI::Data::Users::getUserByUUID($param->{avatar_uuid});
+	my $user = &OpenUGAI::DBData::Users::getUserByUUID($dbh, $param->{avatar_uuid});
 	if (!$user) {
-	    # @@@ move this to OpenUGAI::Data::Users
+	    # @@@ move this to OpenUGAI::DBData::Users
 	    $user = &_getForeginLoginUser($param->{avatar_uuid});
 	}
 	if (!$user) {
