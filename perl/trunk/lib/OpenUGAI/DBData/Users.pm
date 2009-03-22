@@ -95,7 +95,7 @@ sub getUserByName {
 
 sub getUserByUUID {
     my ($conn, $uuid) = @_;
-    my $res = $conn->query($SQL{select_user_by_uuid}, $uuid);
+    my $res = $conn->query($SQL{select_user_by_uuid}, [ $uuid ]);
     my $count = @$res;
     if ($count == 1) {
 	return $res->[0];
