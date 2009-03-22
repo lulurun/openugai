@@ -20,11 +20,17 @@ sub init {
     # init
     eval {
 	$AssetPresentation = new OpenUGAI::AssetServer::Presentation("XML");
-	my %option = (
-		      "root_dir" => "/tmp/assets",
-		      "presentation" => $AssetPresentation,
-		      );
-	$AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance("File", \%option);
+	#my %option = (
+	#	      "root_dir" => "/tmp/assets",
+	#	      "presentation" => $AssetPresentation,
+	#	      );
+	#$AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance("File", \%option);
+	my $option = {
+	    dsn => $OpenUGAI::Global::DSN,
+	    user => $OpenUGAI::Global::DBUSER,
+	    pass => $OpenUGAI::Global::DBPASS,
+	};
+	$AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance("MySQL", $option);
     };
     if ($@) {
 	$AssetStorage = undef;
@@ -40,7 +46,7 @@ sub handler {
 
 # Handler Functions
 sub _fetch_asset_handler {
-    my $id = shift;
+    my ($id, $cgi) = @_;
     my $response = "<ERROR />";
     my $asset = $AssetStorage->fetchAsset($id);
     if (!$asset) {
@@ -48,7 +54,7 @@ sub _fetch_asset_handler {
     } else {
 	$response = $AssetPresentation->serialize($asset);
     }
-    &MyCGI::outputXml("utf-8", $response);
+    print $cgi->header( -type => 'text/xml', -charset => "utf-8" ), $response;
 }
 
 sub _store_asset_handler {
@@ -57,7 +63,7 @@ sub _store_asset_handler {
     my $data = $cgi->param('POSTDATA');
     my $asset = $AssetPresentation->deserialize($data);
     $response = $AssetStorage->storeAsset($asset);
-    &MyCGI::outputXml("utf-8", $response);
+    print $cgi->header( -type => 'text/xml', -charset => "utf-8" ), $response;
 }
 
 sub _delete_asset_handler {

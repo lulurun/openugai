@@ -25,7 +25,7 @@ our @ASSETS_COLUMNS = (
 
 sub fetchAsset {
     my ($conn, $id) = @_;
-    my $res = $conn->query($SQL{select_asset_by_uuid}, { $id });
+    my $res = $conn->query($SQL{select_asset_by_uuid}, [ $id ]);
     if (ref $res) {
 	my $count = @$res;
 	if ($count > 0) {
@@ -46,7 +46,7 @@ sub storeAsset {
 
 sub delelteAsset {
     my ($conn, $id) = @_;
-    return $conn->query($SQL{delete_asset_by_uuid}, { $id });
+    return $conn->query($SQL{delete_asset_by_uuid}, [ $id ]);
 }
 
 1;
