@@ -40,42 +40,43 @@ sub receive {
 
 sub call {
     my ($this, $method_name, $param) = @_;
-	if (!$this->{url}) {
-		Carp::croak("XMLRPC: url not set for calling $method_name");
-	}
+    if (!$this->{url}) {
+	Carp::croak("XMLRPC: url not set for calling $method_name");
+    }
     my $client = RPC::XML::Client->new($this->{url});
     my $request_param = undef;
     my $req = undef;
     if (ref $param eq "ARRAY") {
-		$request_param = &_make_array_param($param);
-		$req = RPC::XML::request->new(
-		    $method_name,
-		    @$request_param,
-		    );
+	$request_param = &_make_array_param($param);
+	$req = RPC::XML::request->new(
+				      $method_name,
+				      @$request_param,
+				      );
     } elsif (ref $param eq "HASH"){
-		$request_param = &_make_hash_param($param);
-		$req = RPC::XML::request->new(
-		    $method_name,
-		    $request_param,
-		    );
+	$request_param = &_make_hash_param($param);
+	$req = RPC::XML::request->new(
+				      $method_name,
+				      $request_param,
+				      );
     } else {
-		Carp::croak("unexpected param type");
-    }
+	Carp::croak("unexpected param type");
+      }
     my $rpc_res = undef;
-	eval {
-	    $rpc_res = $client->send_request($req);
-	};
-	if ($@) {
-		Carp::croak("request " . $this->{url} . "/" . $method_name . " failed. $@" );
-	}
-	if (ref($rpc_res) eq "RPC::XML::struct") {
-	    my %res = map { $_ => $rpc_res->{$_}->value } keys %$rpc_res; # remember good perl !!
-	    return \%res;
-	} elsif (ref($rpc_res) eq "RPC::XML::string") {
-		return $rpc_res->value;
-	} else {
-		return undef;
-	}
+    eval {
+	$rpc_res = $client->send_request($req);
+    };
+    if ($@) {
+	Carp::croak("request " . $this->{url} . "/" . $method_name . " failed. $@" );
+      }
+
+    if (ref($rpc_res) eq "RPC::XML::struct") {
+	my %res = map { $_ => $rpc_res->{$_}->value } keys %$rpc_res;
+	return \%res;
+    } elsif (ref($rpc_res) eq "RPC::XML::string") {
+	return $rpc_res->value;
+    } else {
+	return undef;
+    }
 }
 
 sub _make_array_param {

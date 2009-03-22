@@ -1,8 +1,8 @@
-package OpenUGAI::SimpleRestService;
+package OpenUGAI::RestService;
 
 use CGI;
 use strict;
-use Data::Dump;
+use OpenUGAI::Util;
 
 sub new {
     my $this = shift;
@@ -25,9 +25,14 @@ sub run {
     my ($this, $arg) = @_;
     $arg = undef if (!$arg);
     my $cgi = new CGI($arg);
-   while ( my ($path_pattern, $handler) = each(%{$this->{$cgi->request_method}}) ) {
+    while ( my ($path_pattern, $handler) = each(%{$this->{$cgi->request_method}}) ) {
 	if ($cgi->path_info =~ $path_pattern) {
-	    $handler->($1, $cgi);
+	    eval {
+		$handler->($1, $cgi);
+	    };
+	    if ($@) {
+		OpenUGAI::Util::Log("REST", "Error", $@);
+	    }
 	    return;
 	}
     }

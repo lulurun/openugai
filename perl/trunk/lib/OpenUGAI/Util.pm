@@ -9,6 +9,16 @@ use Socket;
 use Math::BigInt;
 use LWP::UserAgent;
 
+sub GetParam {
+    my $cgi = shift;
+    my @param_names = $cgi->param();
+    my %param = ();
+    foreach (@param_names) {
+	$param{$_} = $cgi->param($_);
+    }
+    return \%param;
+}
+
 sub HttpRequest {
 	my ($method, $url, $data) = @_;
 	my $ua = LWP::UserAgent->new;

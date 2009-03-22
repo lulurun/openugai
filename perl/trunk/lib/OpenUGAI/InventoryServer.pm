@@ -2,53 +2,57 @@ package OpenUGAI::InventoryServer;
 
 use strict;
 use Carp;
-use XML::Serializer;
+use DBHandler;
 use OpenUGAI::Util;
-use OpenUGAI::Data::Inventory;
+use OpenUGAI::RestService;
+our @ISA = qw(OpenUGAI::RestService);
+use OpenUGAI::DBData::Inventory;
+use XML::Serializer;
 
-our %RestHandlers = (
-		     "GetInventory" => \&_get_inventory,
-		     "CreateInventory" => \&_create_inventory,
-		     "NewFolder" => \&_new_folder,
-		     "MoveFolder" => \&_move_folder,
-		     "NewItem" => \&_new_item,
-		     "DeleteItem" => \&_delete_item,
-		     "RootFolders" => \&_root_folders,
-		     "UpdateFolder" => \&_update_folder,
-		     "PurgeFolder" => \&_purge_folder,
-		     );
-sub StartUp {
-    # for mod_perl startup
-    ;
-}
+our $dbh;
 
-sub DispatchRestHandler {
-    my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
-    &OpenUGAI::Util::Log("inventory", "Dispatch", $methodname);
-    if ($RestHandlers{$methodname}) {
-	return $RestHandlers{$methodname}->(@param);
-    }
-    Carp::croak("unknown rest method");
+sub init {
+    my $this = shift;
+    # init db
+    my $db_info = {
+	dsn => $OpenUGAI::Global::DSN,
+	user => $OpenUGAI::Global::DBUSER,
+	pass => $OpenUGAI::Global::DBPASS,
+    };
+    $dbh = new DBHandler($db_info);
+    # register handlers # not really restful
+    $this->registerHandler( "POST", qr{GetInventory} => \&_get_inventory);
+    $this->registerHandler( "POST", qr{CreateInventory} => \&_create_inventory);
+    $this->registerHandler( "POST", qr{NewFolder} => \&_new_folder);
+    $this->registerHandler( "POST", qr{MoveFolder} => \&_move_folder);
+    $this->registerHandler( "POST", qr{NewItem} => \&_new_item);
+    $this->registerHandler( "POST", qr{DeleteItem} => \&_delete_item);
+    $this->registerHandler( "POST", qr{RootFolders} => \&_root_folders);
+    $this->registerHandler( "POST", qr{UpdateFolder} => \&_update_folder);
+    $this->registerHandler( "POST", qr{PurgeFolder} => \&_purge_folder);
+    &OpenUGAI::Util::Log("invnetory", "init", "OK");
 }
 
 # #################
 # Handlers
 sub _get_inventory {
-    my $post_data = shift;
-    my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+    my $request_obj = &OpenUGAI::Util::XML2Obj($postdata);
     &OpenUGAI::Util::Log("inventory", "get_inventory_request", $request_obj);
 
     # secure inventory, but do nothing for now
     #&_validate_session($request_obj);
 
     my $uuid = $request_obj->{Body};
-    my $inventry_folders = &OpenUGAI::Data::Inventory::getUserInventoryFolders($uuid);
+    my $inventry_folders = &OpenUGAI::DBData::Inventory::getUserInventoryFolders($dbh, $uuid);
     my @response_folders = ();
     foreach (@$inventry_folders) {
 	my $folder = &_convert_to_response_folder($_);
 	push @response_folders, $folder;
     }
-    my $inventry_items = &OpenUGAI::Data::Inventory::getUserInventoryItems($uuid);
+    my $inventry_items = &OpenUGAI::DBData::Inventory::getUserInventoryItems($dbh, $uuid);
     my @response_items = ();
     foreach (@$inventry_items) {
 	my $item = &_convert_to_response_item($_);
@@ -59,88 +63,92 @@ sub _get_inventory {
 	UserID => { Guid => $uuid },
 	Items => { InventoryItemBase => \@response_items },
     };
-
-    &OpenUGAI::Util::Log("inventory", "get_inventory_response", $response_obj);
-
-    my $serializer = new XML::Serializer( $response_obj, "InventoryCollection");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, $response_obj, "InventoryCollection");
 }
 
 sub _create_inventory {
-    my $post_data = shift;
-    my $uuid = &_get_uuid($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+    my $uuid = &_get_uuid($postdata);
     my $InventoryFolders = &_create_default_inventory($uuid);
     foreach (@$InventoryFolders) {
 	&OpenUGAI::Data::Inventory::saveInventoryFolder($_);
     }
-    my $serializer = new XML::Serializer("true", "boolean");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, "true", "boolean");
 }
 
 sub _update_folder {
-    # TODO @@@ copy from _new_folder, but "replace into" does not work everywhere
-    my $post_data = shift;
-    my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+    my $request_obj = &OpenUGAI::Util::XML2Obj($postdata);
     my $folder = &_convert_to_db_folder($request_obj->{Body});
     &OpenUGAI::Data::Inventory::saveInventoryFolder($folder);
-    my $serializer = new XML::Serializer("true", "boolean");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, "true", "boolean");
 }
 
 sub _new_folder {
-    my $post_data = shift;
-    my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+    my $request_obj = &OpenUGAI::Util::XML2Obj($postdata);
     my $folder = &_convert_to_db_folder($request_obj->{Body});
     &OpenUGAI::Data::Inventory::saveInventoryFolder($folder);
-    my $serializer = new XML::Serializer("true", "boolean");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, "true", "boolean");
 }
 
 sub _move_folder {
-    my $post_data = shift;
-    my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+    my $request_obj = &OpenUGAI::Util::XML2Obj($postdata);
     &OpenUGAI::Data::Inventory::moveInventoryFolder($request_obj->{Body});
-    my $serializer = new XML::Serializer("true", "boolean");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, "true", "boolean");
 }
 
 sub _purge_folder {
-    my $post_data = shift;
-    my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+    my $request_obj = &OpenUGAI::Util::XML2Obj($postdata);
     &OpenUGAI::Data::Inventory::purgeInventoryFolder($request_obj->{Body});
-    my $serializer = new XML::Serializer("true", "boolean");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, "true", "boolean");
 }
 
 sub _new_item {
-    my $post_data = shift;
-    # TODO @@@ check inventory id
-    my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+
+    my $request_obj = &OpenUGAI::Util::XML2Obj($postdata);
     my $item = &_convert_to_db_item($request_obj->{Body});
     &OpenUGAI::Data::Inventory::saveInventoryItem($item);
-    my $serializer = new XML::Serializer("true", "boolean");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, "true", "boolean");
 }
 
 sub _delete_item {
-    my $post_data = shift;
-    my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+    my $request_obj = &OpenUGAI::Util::XML2Obj($postdata);
     my $item = $request_obj->{Body};
     my $item_id = $item->{ID}->{Guid};
     &OpenUGAI::Data::Inventory::deleteInventoryItem($item_id);
-    my $serializer = new XML::Serializer("true", "boolean");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, "true", "boolean");
 }
 
 sub _root_folders {
-    my $post_data = shift;
-    my $uuid = &_get_uuid($post_data);
+    my $path = shift;
+    my $cgi = shift;
+    my $postdata = $cgi->param("POSTDATA");
+    my $uuid = &_get_uuid($postdata);
     my $response = undef;
-    my $inventory_root_folder = &OpenUGAI::Data::Inventory::getRootFolder($uuid);
+    my $inventory_root_folder = &OpenUGAI::DBData::Inventory::getRootFolder($dbh, $uuid);
     if ($inventory_root_folder) {
 	my $root_folder_id = $inventory_root_folder->{folderID};
 	my $root_folder = &_convert_to_response_folder($inventory_root_folder);
-	my $root_folders = &OpenUGAI::Data::Inventory::getChildrenFolders($root_folder_id);
+	my $root_folders = &OpenUGAI::DBData::Inventory::getChildrenFolders($dbh, $root_folder_id);
 	my @folders = ($root_folder);
 	foreach(@$root_folders) {
 	    my $folder = &_convert_to_response_folder($_);
@@ -150,12 +158,18 @@ sub _root_folders {
     } else {
 	$response = { InventoryFolderBase => &_create_default_inventory($uuid, 1) };
     }
-    my $serializer = new XML::Serializer($response, "ArrayOfInventoryFolderBase");
-    return $serializer->to_formatted(XML::Serializer::WITH_HEADER); # TODO:
+    &_output_response($cgi, $response, "ArrayOfInventoryFolderBase");
 }
 
 # #################
 # subfunctions
+sub _output_response {
+    my ($cgi, $response, $node) = @_;
+    my $serializer = new XML::Serializer($response, $node);
+    print $cgi->header( -type => 'text/xml', -charset => "utf-8" );
+    print $serializer->to_formatted(XML::Serializer::WITH_HEADER);
+}
+
 sub _convert_to_db_item {
     my $item = shift;
     my $ret = {

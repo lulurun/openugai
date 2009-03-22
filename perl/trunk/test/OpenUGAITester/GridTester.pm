@@ -41,13 +41,14 @@ sub _map_block {
 }
 
 sub _simulator_data_request {
-	my $url = shift || $OpenUGAITester::Config::GRID_SERVER_URL;
+    my $url = shift || $OpenUGAITester::Config::GRID_SERVER_URL;
     my @param = @_;
-	my %xml_rpc_param = (
-		region_handle => $param[0],
-		authkey => undef,
-	);
-    return &OpenUGAI::Util::XMLRPCCall($url, "simulator_data_request", \%xml_rpc_param);
+    my $xml_rpc_param = {
+	region_handle => $param[0],
+	authkey => undef,
+    };
+    my $response = &OpenUGAI::Util::XMLRPCCall($url, "simulator_data_request", $xml_rpc_param);
+    return $response;
 }
 
 sub _simulator_after_region_moved {

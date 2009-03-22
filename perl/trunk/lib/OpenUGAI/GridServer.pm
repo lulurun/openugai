@@ -1,41 +1,51 @@
 package OpenUGAI::GridServer;
 
 use strict;
+use Storable;
+use Digest::MD5;
+
+use DBHandler;
 use OpenUGAI::Global;
 use OpenUGAI::Util;
-use OpenUGAI::Data::Regions;
+use OpenUGAI::XMLRPCService;
+our @ISA = qw(OpenUGAI::XMLRPCService);
+use OpenUGAI::UserServer::Config;
+use OpenUGAI::DBData::Regions;
 
 our $ValidateContactable = 0; # 0 for debug
+our $dbh;
 
-our %XMLRPCHandlers = (
-		       "simulator_login" => \&_simulator_login,
-		       "simulator_data_request" => \&_simulator_data_request,
-		       "simulator_after_region_moved" => \&_simulator_after_region_moved,
-		       "map_block" => \&_map_block,
-		       # not implemented
-		       "register_messageserver" => \&_not_implemented,
-		       "deregister_messageserver" => \&_not_implemented,
-		       );
+sub init {
+    my $this = shift;
+    # init db
+    my $db_info = {
+	dsn => $OpenUGAI::Global::DSN,
+	user => $OpenUGAI::Global::DBUSER,
+	pass => $OpenUGAI::Global::DBPASS,
+    };
+    $dbh = new DBHandler($db_info);
+    # register handlers
+    $this->registerHandler("simulator_login" => \&_simulator_login);
+    $this->registerHandler("simulator_data_request" => \&_simulator_data_request);
+    $this->registerHandler("simulator_after_region_moved" => \&_simulator_after_region_moved);
+    $this->registerHandler("map_block" => \&_map_block);
+    # not implemented
+    $this->registerHandler("register_messageserver" => \&_not_implemented);
+    $this->registerHandler("deregister_messageserver" => \&_not_implemented);
+    &OpenUGAI::Util::Log("grid", "init", "OK");
+}
 
+sub handler {
+    my $this = shift;
+    $this->run();
+}
+
+# #################
+# Handlers
 sub _not_implemented {
     return &_make_false_response("not implemented yet");
 }
 
-sub StartUp {
-    # for mod_perl startup
-    ;
-}
-
-sub DispatchXMLRPCHandler {
-    my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
-    if ($XMLRPCHandlers{$methodname}) {
-	return $XMLRPCHandlers{$methodname}->(@param);
-    }
-    Carp::croak("unknown xmlrpc method");
-}
-
-# #################
-# XMLRPC Handlers
 sub _simulator_after_region_moved {
     my $params = shift;
     my %response = ();
@@ -47,15 +57,8 @@ sub _simulator_after_region_moved {
 	$response{"error"} = "No region_uuid passed to grid server";
 	return \%response;
     }
-    
-    eval {
-	&OpenUGAI::Data::Regions::deleteRegionByUUID($region_uuid);
-    };
-    if ($@) {
-	$response{"status"} = "Deleting region failed: $region_uuid";
-    } else {
-	$response{"status"} = "Deleting region successful: $region_uuid";
-    }
+    &OpenUGAI::DBData::Regions::deleteRegionByUUID($dbh, $region_uuid);
+    $response{"status"} = "Deleting region successful: $region_uuid";
     return \%response;
 }
 
@@ -178,14 +181,17 @@ sub _simulator_login {
 
 sub _simulator_data_request {
     my $params = shift;
-    
     my $region_data = undef;
     my %response = ();
+
+    &OpenUGAI::Util::Log("grid", "data_request", $params);
+
     if ($params->{"region_UUID"}) {
-	$region_data = &OpenUGAI::Data::Regions::getRegionByUUID($params->{"region_UUID"});
+	$region_data = &OpenUGAI::DBData::Regions::getRegionByUUID($dbh, $params->{"region_UUID"});
     } elsif ($params->{"region_handle"}) {
-	$region_data = &OpenUGAI::Data::Regions::getRegionByHandle($params->{"region_handle"});
+	$region_data = &OpenUGAI::DBData::Regions::getRegionByHandle($dbh, $params->{"region_handle"});
     }
+
     if (!$region_data) {
 	$response{"error"} = "Sim does not exist";
 	return \%response;
@@ -218,7 +224,7 @@ sub _map_block {
     my $ymax = $params->{ymax} || 1020;
     
     my @sim_block_list = ();
-    my $region_list = &OpenUGAI::Data::Regions::getRegionList($xmin, $ymin, $xmax, $ymax);
+    my $region_list = &OpenUGAI::DBData::Regions::getRegionList($dbh, $xmin, $ymin, $xmax, $ymax);
     foreach my $region (@$region_list) {
 	my %sim_block = (
 	    "x" => $region->{locX},

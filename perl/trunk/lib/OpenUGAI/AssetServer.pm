@@ -3,8 +3,8 @@ package OpenUGAI::AssetServer;
 use strict;
 use Carp;
 use OpenUGAI::Util;
-use OpenUGAI::SimpleRestService;
-our @ISA = qw(OpenUGAI::SimpleRestService);
+use OpenUGAI::RestService;
+our @ISA = qw(OpenUGAI::RestService);
 use OpenUGAI::AssetServer::Storage;
 use OpenUGAI::AssetServer::Presentation;
 

@@ -1,7 +1,6 @@
-package OpenUGAI::Data::Avatar;
+package OpenUGAI::DBData::Avatar;
 
 use strict;
-use OpenUGAI::DBData;
 
 our %SQL = (
 	    get_avatar_appearance =>
@@ -61,33 +60,35 @@ our @APPEARANCE_COLUMNS = (
 # #############
 # Attachment
 sub SelectAttachment {
-    my $uuid = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_avatar_attachment}, $uuid);
-    return $res;
-}
+    my ($conn, $uuid) = @_;
+    my $res = $conn->query($SQL{get_avatar_attachment}, { $uuid });
+    my $count = @$res;
+    if ($count == 1) {
+    	return $res->[0];
+    } else {
+    	return undef;
+    }
+ }
 
 sub UpdateAttachment {
-    my $attachment = shift;
+    my ($conn, $attachment) = @_;
     my @args = ();
     foreach( @ATTACHMENT_COLUMNS ) {
 	push @args, $attachment->{$_}; # TODO: OK ???
     }
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_attachment}, \@args);
-    return $res;
+    return $conn->query($SQL{update_avatar_attachment}, \@args);
 }
 
 sub DeleteAvatarAttachments {
-    my $owner = shift;
-    my @args = ( $owner );
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{delete_avatar_attachments}, \@args);
-    return $res;
+    my ($conn, $owner) = @_;
+    return $conn->query($SQL{delete_avatar_attachments}, { $owner });
 }
 
 # #############
 # Appearance
 sub SelectAppearance {
-    my $owner = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_avatar_appearance}, $owner);
+    my ($conn, $owner) = @_;
+    my $res = $conn->query($SQL{get_avatar_appearance}, { $owner });
     my $count = @$res;
     if ($count == 1) {
     	return $res->[0];
@@ -97,23 +98,21 @@ sub SelectAppearance {
 }
 
 sub UpdateAppearance {
-    my $appearance = shift;
+    my ($conn, $appearance) = @_;
     my @args = ();
     foreach( @APPEARANCE_COLUMNS ) {
 	push @args, $appearance->{lc($_)}; # stupid lc because stupid opensim impl
     }
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_appearance}, \@args);
-    return $res;
+    return $conn->query($SQL{update_avatar_appearance}, \@args);
 }
 
 sub UpdateAppearance_RawData {
-    my $appearance = shift;
+    my ($conn, $appearance) = @_;
     my @args = ();
     foreach( @APPEARANCE_COLUMNS ) {
 	push @args, $appearance->{lc($_)}; # stupid lc because stupid opensim impl
     }
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_appearance_raw_data}, \@args);
-    return $res;
+    return $conn->query($SQL{update_avatar_appearance_raw_data}, \@args);
 }
 
 1;

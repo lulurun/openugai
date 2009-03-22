@@ -6,70 +6,103 @@ use Digest::MD5;
 use Carp;
 
 use OpenUGAI::Global;
+use OpenUGAI::XMLRPCService;
 use OpenUGAI::Util;
 use OpenUGAI::SampleApp;
 use OpenUGAI::UserServer::Config;
-use OpenUGAI::Data::Users;
-use OpenUGAI::Data::Agents;
+use OpenUGAI::DBData::Users;
+use OpenUGAI::DBData::Agents;
+use DBHandler;
 # OpenID
 use CGI;
 use LWPx::ParanoidAgent;
 use Net::OpenID::Consumer;
 
-our %XMLRPCHandlers = (
-		       "login_to_simulator" => \&_login_to_simulator,
-);
+our $dbh;
+our $xmlrpc;
 
-our %HTTPHandlers = (
-		     "loginpage" => \&_show_login_page,
-		     "go" => \&_login_from_web_page,
-		     "openid_request" => \&_openid_request_handler,
-		     "openid_verify" => \&_openid_verify_handler,
-);
-
-sub StartUp {
-    # for mod_perl startup
-    ;
+sub new {
+    my $this = shift;
+    return bless {}, $this;
 }
 
-sub DispatchXMLRPCHandler {
-    my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
-    if ($XMLRPCHandlers{$methodname}) {
-	return $XMLRPCHandlers{$methodname}->(@param);
-    }
-    Carp::croak("unknown xmlrpc method");
+sub init {
+    my $this = shift;
+    # init db
+    my $db_info = {
+	dsn => $OpenUGAI::Global::DSN,
+	user => $OpenUGAI::Global::DBUSER,
+	pass => $OpenUGAI::Global::DBPASS,
+    };
+    $dbh = new DBHandler($db_info);
+    # init xmlrpc
+    $xmlrpc = new OpenUGAI::XMLRPCService();
+    # register handlers
+    $xmlrpc->registerHandler("login_to_simulator" => \&_login_to_simulator);
+    $this->{handlers} = {
+	"loginpage" => \&_show_login_page,
+	"go" => \&_login_from_web_page,
+	"openid_request" => \&_openid_request_handler,
+	"openid_verify" => \&_openid_verify_handler,
+    };
+    &OpenUGAI::Util::Log("login", "init", "OK");
 }
 
-sub DispatchHTTPHandler {
-    my ($methodname, $param) = @_; # $param is raw http request param hash list
-    if ($HTTPHandlers{$methodname}) {
-	return $HTTPHandlers{$methodname}->($param);
+sub run {
+    my ($this, $arg) = @_;
+    $arg = undef if (!$arg);
+    my $cgi = new CGI($arg);
+    eval {
+	if ($ENV{"REQUEST_METHOD"} eq "POST") {
+	    my $postdata = $cgi->param('POSTDATA');
+	    Carp::croak("no post data") if (!$postdata);
+	    my $response = $xmlrpc->handle($postdata);
+	    &OpenUGAI::Util::Log("login", "response", $response);
+	    print $cgi->header(-charset => "utf-8"), $response;
+	} else { # POST method, XMLRPC
+	    my $method = $cgi->param("method") || "";
+	    my ($response, $act) = $this->dispatch_handler($method, &OpenUGAI::Util::GetParam($cgi));
+	    if ($act eq "redirect") {
+		$cgi->redirect($response);
+	    } else {
+		print $cgi->header( -type => 'text/xml', -charset => "utf-8" ), $response;
+	    }
+	}
+    };
+    if ($@) {
+	&OpenUGAI::Util::Log("login", "error", $@);
+	print $cgi->header( -type => 'text/xml', -charset => "utf-8"), &OpenUGAI::SampleApp::Guide;
     }
-    Carp::croak("unknown http method");
+    
+}
+
+sub dispatch_handler {
+    my ($this, $method, $param) = @_;
+    my $handler = $this->{handlers}->{$method};
+    Carp::croak("unknown http method") if (!$handler);    
+    return $handler->($param);
 }
 
 # ##################
 # HTTP handlers
 sub _show_login_page {
-    my $param = shift;
-    return &OpenUGAI::SampleApp::LoginForm($param);
+    return &OpenUGAI::SampleApp::LoginForm(shift);
 }
 
 sub _login_from_web_page {
     my $param = shift;
-    my %auth_param = (
-		      "first" => $param->{username},
-		      "last"  => $param->{lastname},
-		      "passwd" => $param->{password},
-		      "weblogin" => $param->{weblogin},
-		      );
-    my $userinfo = &Authenticate(\%auth_param);
+    my $auth_param = {
+	"first" => $param->{"username"},
+	"last"  => $param->{"lastname"},
+	"passwd" => $param->{"password"},
+	"weblogin" => $param->{"weblogin"},
+    };
+    my $userinfo = &Authenticate($auth_param);
     if (!$userinfo) {
 	return &OpenUGAI::SampleApp::LoginForm($param, "wrong password");
     } else {
 	my $auth_key = $userinfo->{webLoginKey};
-	my $redirect_url = &_create_client_login_trigger($param, $auth_key); 
-	return ( $redirect_url, "redirect" );
+	return ( &_create_client_login_trigger($param, $auth_key), "redirect" );
     }
 }
 
@@ -77,7 +110,7 @@ sub _login_from_web_page {
 # OpenID authentication request
 sub _openid_request_handler {
     my $param = shift;
-    my $openid = $param->{openid_identifier};
+    my $openid = $param->{"openid_identifier"};
     my $csr = new Net::OpenID::Consumer(
 					ua    => new LWPx::ParanoidAgent(),
 					args  => new CGI, # TODO: should be $param
@@ -87,7 +120,7 @@ sub _openid_request_handler {
     my $claimed_identity = $csr->claimed_identity($openid);
     if (!$claimed_identity) {
 	Carp::croak("not a valid openid");
-    }
+      }
     if ($OpenUGAI::Global::USER_AX) {
 	# sreg
 	$claimed_identity->set_extension_args($OpenUGAI::Global::OPENID_NS_SREG_1_1, {
@@ -115,17 +148,16 @@ sub _openid_request_handler {
 # ##################
 # OpenID authentication verification
 sub _openid_verify_handler {
-    my $param = shift;
     my $csr = new Net::OpenID::Consumer(
 					ua    => new LWPx::ParanoidAgent(),
 					args  => new CGI, # TODO: should be $param
 					consumer_secret => $OpenUGAI::Global::OPENID_CONSUMER_SECRET,
 					);
-
+    
     $csr->handle_server_response(
 				 not_openid => sub {
 				     Carp::croak("Not an OpenID message");
-				 },
+				   },
 				 setup_required => sub {
 				     my $setup_url = shift;
 				     # Redirect the user to $setup_url
@@ -179,7 +211,7 @@ sub _openid_verified_ok {
 
 sub Authenticate {
     my $params = shift;
-    my $user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
+    my $user = &OpenUGAI::DBData::Users::getUserByName($dbh, $params->{first}, $params->{last});
     my $login_pass = $params->{passwd};
     $login_pass =~ s/^\$1\$//;
     if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
@@ -216,10 +248,10 @@ sub _login_to_simulator {
 	return &_make_false_response("password not match", "Late! There is a wolf behind you");
     }
     # check other online agent
-    my $agent = &OpenUGAI::Data::Agents::SelectAgent($user->{UUID});
+    my $agent = &OpenUGAI::DBData::Agents::SelectAgent($dbh, $user->{UUID});
     if ($agent && $agent->{agentOnline}) {
 	# try to notify the online user agent
-	&OpenUGAI::Data::Agents::SetOnlineStatus($user->{UUID}, 0);
+	&OpenUGAI::DBData::Agents::SetOnlineStatus($dbh, $user->{UUID}, 0);
 	return &_make_false_response(
 	    "presence",
 	    "You appear to be already logged in. " .
@@ -312,7 +344,7 @@ sub _login_to_simulator {
     $agent->{logoutTime} = 0;
     $agent->{agentIP} = "";  # TODO @@@ 
     $agent->{agentPort} = 0; # TODO @@@
-    &OpenUGAI::Data::Agents::AgentLogon($agent);    
+    &OpenUGAI::DBData::Agents::AgentLogon($dbh, $agent);    
     # contact with Inventory server
     my $inventory_data = &_create_inventory_data($user->{UUID});
     # return to client

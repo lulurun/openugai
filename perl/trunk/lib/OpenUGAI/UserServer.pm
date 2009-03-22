@@ -6,51 +6,45 @@ use Digest::MD5;
 
 use OpenUGAI::Global;
 use OpenUGAI::Util;
+use OpenUGAI::SimpleXMLRPCService;
+our @ISA = qw(OpenUGAI::SimpleXMLRPCService);
 use OpenUGAI::UserServer::Config;
-use OpenUGAI::Data::Avatar;
-use OpenUGAI::Data::Users;
-use OpenUGAI::Data::Agents;
+use OpenUGAI::DBData::Avatar;
+use OpenUGAI::DBData::Users;
+use OpenUGAI::DBData::Agents;
 
-our %XMLRPCHandlers = (
-		       "get_user_by_name" => \&_get_user_by_name,
-		       "get_user_by_uuid" => \&_get_user_by_uuid,
-		       "get_avatar_appearance" => \&_get_avatar_appearance,
-		       "update_avatar_appearance" => \&_update_avatar_appearance,
-		       "update_user_current_region" => \&_update_user_current_region,
-		       "logout_of_simulator" => \&_logout_of_simulator,
-		       "get_agent_by_uuid" => \&_get_agent_by_uuid,
-		       "agent_change_region" => \&_agent_change_region,
-		       "deregister_messageserver" => \&_deregister_messageserver,
-		       # not implemented
-		       "register_messageserver" => \&_not_implemented,
-		       "update_user_profile" => \&_not_implement,
-		       "add_new_user_friend" => \&_not_implemented,
-		       "remove_user_frind" => \&_not_implemented,
-		       "update_user_friend_perms" => \&_not_implemented,
-		       "get_user_friend_list" => \&_not_implemented,
-		       "get_avatar_picker_avatar" => \&_not_implemented,
-		       );
-
-sub _not_implemented {
-    return &_make_false_response("not implemented yet");
+sub init {
+    my $this = shift;
+    $this->registerHandler("get_user_by_name" => \&_get_user_by_name);
+    $this->registerHandler("get_user_by_uuid" => \&_get_user_by_uuid);
+    $this->registerHandler("get_avatar_appearance" => \&_get_avatar_appearance);
+    $this->registerHandler("update_avatar_appearance" => \&_update_avatar_appearance);
+    $this->registerHandler("update_user_current_region" => \&_update_user_current_region);
+    $this->registerHandler("logout_of_simulator" => \&_logout_of_simulator);
+    $this->registerHandler("get_agent_by_uuid" => \&_get_agent_by_uuid);
+    $this->registerHandler("agent_change_region" => \&_agent_change_region);
+    $this->registerHandler("deregister_messageserver" => \&_deregister_messageserver);
+    # not implemented
+    $this->registerHandler("register_messageserver" => \&_not_implemented);
+    $this->registerHandler("update_user_profile" => \&_not_implement);
+    $this->registerHandler("add_new_user_friend" => \&_not_implemented);
+    $this->registerHandler("remove_user_frind" => \&_not_implemented);
+    $this->registerHandler("update_user_friend_perms" => \&_not_implemented);
+    $this->registerHandler("get_user_friend_list" => \&_not_implemented);
+    $this->registerHandler("get_avatar_picker_avatar" => \&_not_implemented);
 }
 
-sub StartUp {
-    # for mod_perl startup
-    ;
-}
-
-sub DispatchXMLRPCHandler {
-    my ($methodname, @param) = @_; # @param is extracted by xmlrpc lib
-    if ($XMLRPCHandlers{$methodname}) {
-	&OpenUGAI::Util::Log("user", "Dispatch", $methodname);
-	return $XMLRPCHandlers{$methodname}->(@param);
-    }
-    Carp::croak("unknown xmlrpc method");
+sub handler {
+    my $this = shift;
+    $this->run();
 }
 
 # #################
 # Handlers
+sub _not_implemented {
+    return &_make_false_response("not implemented yet");
+}
+
 sub _logout_of_simulator {
     my $params = shift;
     # TODO @@@ inform message server: NotifyMessageServersUserLoggOff

@@ -1,61 +1,43 @@
+package Statement;
+
 use strict;
 use DBI;
 use Carp;
 
-package DBHandler;
-
-sub getConnection {
-    my $db_info = shift;
-    my $DB_CONN = DBI->connect($db_info->{dsn}, $db_info->{user}, $db_info->{pass});
-    $DB_CONN->{AutoCommit} = 1;
-    $DB_CONN->{RaiseError} = 1;
-    return $DB_CONN;
-}
-
-# #############
-# Simple statement
-package Statement;
-
 sub new {
-    my ( $this, $dbh, $sql, $is_trans ) = @_;
-    # @@@ sql should be tested OK, so here just die
+    my ( $this, $db_info, $sql) = @_;
+    # connect
+    my $dbh = DBI->connect($db_info->{dsn}, $db_info->{user}, $db_info->{pass});
+    $dbh->{AutoCommit} = 1;
+    $dbh->{RaiseError} = 1;
+    # @@@ why ?
     my $sth = $dbh->prepare($sql) || Carp::croak( $dbh->errstr );
     my %fields = (
 		  dbh => $dbh,
 		  sql => $sql,
 		  sth => $sth,
-		  is_trans => $is_trans,
 		  );
     return bless \%fields, $this;
 }
 
-sub exec {
+sub execute {
     my ( $this, @param ) = @_;
     my $dbh = $this->{dbh};
     my $sth = $this->{sth};
     my $sql = $this->{sql};
     
-    if ( !$sth->execute(@param) ) {
-	if ( $this->{is_trans} ) {
-	    $dbh->rollback();
-	}
-	Carp::croak( $dbh->errstr );
-    }
-    my @ret = ();
+    Carp::croak( $dbh->errstr ) unless $sth->execute(@param);
+
     if ( $sql =~ /^select|show|desc/i ) {
+	my @ret = ();
 	# @@@ get result object
 	while ( my $res = $sth->fetchrow_hashref() ) {
 	    push @ret, $res;
 	}
+	return \@ret;
     }
     # @@@ $sth->finish();
-    return \@ret;
-}
-
-sub last_id {
-    my $this = shift;
-    my $dbh = $this->{dbh};
-    return $dbh->last_insert_id(undef, undef, undef, undef);
+    return 1;
 }
 
 sub DESTROY {
@@ -63,6 +45,29 @@ sub DESTROY {
     my $sth  = $this->{sth};
     $sth->finish();
 }
+
+package DBHandler;
+
+sub new {
+    my ($this, $db_info) = @_;
+    Carp::croak("not enough db info") unless ($db_info->{dsn} && $db_info->{user} && $db_info->{pass});
+    my %fields = (
+		  db_info => $db_info,
+		  );
+    return bless \%fields, $this;
+}
+
+sub query {
+    my ($this, $sql, $args) = @_;
+    Carp::croak("bad type of args") if (ref $args ne "ARRAY");
+    my $st = new Statement($this->{db_info}, $sql);
+    my $res = $st->execute(@$args);
+    return $res;
+}
+
+1;
+
+__END__
 
 # #############
 # Transaction

@@ -1,7 +1,6 @@
-package OpenUGAI::Data::Agents;
+package OpenUGAI::DBData::Agents;
 
 use strict;
-use OpenUGAI::DBData;
 
 my %SQL = (
     select_agent_by_uuid =>
@@ -36,8 +35,8 @@ my @AGENTS_COLUMNS = (
     );
 
 sub SelectAgent {
-    my $uuid = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_agent_by_uuid}, $uuid);
+    my ($conn, $uuid) = @_;
+    my $res = $conn->query( $SQL{select_agent_by_uuid}, [ $uuid ] );
     my $count = @$res;
     if ($count == 1) {
 	return $res->[0];
@@ -46,39 +45,41 @@ sub SelectAgent {
 }
 
 sub UpdateAgent {
-    my $params = shift;
+    my ($conn, $params) = @_;
     my @args;
     foreach (@AGENTS_COLUMNS) {
 	push @args, $params->{$_};
     }
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_agent}, \@args);
+    my $res = $conn->query($SQL{update_agent}, \@args);
     return $res;
 }
 
 sub UpdateAgentCurrentRegion {
-    my ($aid, $rid, $handle) = @_;
+    my ($conn, $aid, $rid, $handle) = @_;
     my @args = ( $handle, $rid, $aid );
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_agent_current_region}, \@args);
+    my $res = $conn->query($SQL{update_agent_current_region}, \@args);
     return $res;
 }
 
 
 sub AgentLogoff {
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{agent_logoff}, \@_);
+    my $conn = shift;
+    my $res = $conn->query($SQL{agent_logoff}, \@_);
     return $res;
 }
 
 sub AgentLogon {
-    return &UpdateAgent(shift);
+    return &UpdateAgent(@_);
     #my $res = &OpenUGAI::DBData::getSimpleResult($SQL{agent_logon}, \@_);
     #return $res;
 }
 
 sub SetOnlineStatus {
-    my ($id, $online) = @_;
+    my ($conn, $id, $online) = @_;
     my @args = ( $online, $id );
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{set_online_status}, \@args);
+    my $res = $conn->query($SQL{set_online_status}, \@args);
     return $res;
 }
 
 1;
+

@@ -1,7 +1,6 @@
-package OpenUGAI::Data::Inventory;
+package OpenUGAI::DBData::Inventory;
 
 use strict;
-use OpenUGAI::DBData;
 use OpenUGAI::Util;
 
 our %SQL = (
@@ -61,30 +60,29 @@ our @INVENTORYITEMS_COLUMNS = (
 );
 
 sub saveInventoryFolder {
+    my $conn = shift;
     my $folder = shift;
     my @args;
     foreach(@INVENTORYFOLDERS_COLUMNS) {
 	push @args, $folder->{$_};
     }
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{save_inventory_folder}, \@args);
-    return $res;
+    return $conn->query($SQL{save_inventory_folder}, \@args);
 }
 
 sub saveInventoryItem {
+    my $conn = shift;
     my $item = shift;
     my @args;
     foreach(@INVENTORYITEMS_COLUMNS) {
 	push @args, $item->{$_};
     }
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{save_inventory_item}, \@args);
-    return $res;
+    return $conn->query($SQL{save_inventory_item}, \@args);
 }
 
 sub getRootFolder {
+    my $conn = shift;
     my $agent_id = shift;
-    my @args = ( &OpenUGAI::Util::ZeroUUID(), $agent_id );
-    #my @args = ( $agent_id );
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_root_folder}, \@args);
+    my $res = $conn->query($SQL{get_root_folder}, [ &OpenUGAI::Util::ZeroUUID(), $agent_id ] );
     my $count = @$res;
     if ($count > 0) {
 	return $res->[0];
@@ -93,38 +91,37 @@ sub getRootFolder {
 }
 
 sub getChildrenFolders {
+    my $conn = shift;
     my $parent_id = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_children_folders}, $parent_id);
-    return $res;
+    return $conn->query($SQL{get_children_folders}, [ $parent_id ]);
 }
 
 sub getUserInventoryFolders {
+    my $conn = shift;
     my $agent_id = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_user_inventory_folders}, $agent_id);
-    return $res;
+    return $conn->query($SQL{get_user_inventory_folders}, [ $agent_id ]);
 }
 
 sub getUserInventoryItems {
+    my $conn = shift;
     my $agent_id = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_user_inventory_items}, $agent_id);
-    return $res;
+    return $conn->query($SQL{get_user_inventory_items}, [ $agent_id ]);
 }
 
 sub deleteInventoryItem {
+    my $conn = shift;
     my $item_id = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{delete_inventory_item}, $item_id);
-    return $res;
+    return $conn->query($SQL{delete_inventory_item}, [ $item_id ]);
 }
 
-use Data::Dump;
 sub purgeInventoryFolder {
+    my $conn = shift;
     my $info = shift;
-    &OpenUGAI::Util::Log("test", "purge_req", Data::Dump::dump($info));
-
     my @args = (
-	$info->{ID}->{Guid}, # TODO: not good UUID should be extracted in the higher level
-	);
-    &OpenUGAI::DBData::getSimpleResult($SQL{purge__delete_items}, \@args);
+		$info->{ID}->{Guid},
+                # TODO: not good UUID should be extracted in the higher level
+		);
+    $conn->query($SQL{purge__delete_items}, \@args);
 }
 
 

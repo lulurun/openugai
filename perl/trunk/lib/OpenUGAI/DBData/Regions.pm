@@ -1,7 +1,6 @@
-package OpenUGAI::Data::Regions;
+package OpenUGAI::DBData::Regions;
 
 use strict;
-use OpenUGAI::DBData;
 
 our %SQL = (
     select_region_by_uuid =>
@@ -58,29 +57,29 @@ our @REGIONS_COLUMNS = (
     );
 
 sub addRegion {
-    my $region_data = shift;
+    my ($conn, $region_data) = @_;
     my @region_args;
     foreach(@REGIONS_COLUMNS) {
 	push @region_args, $region_data->{$_};
     }
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{insert_region}, \@region_args);
-    return $res;
+    return $conn->query($SQL{insert_region}, \@region_args);
 }
 
 sub updateRegionByHandle {
+    my $conn = shift;
     my $region_data = shift;
     my @region_args;
     foreach(@REGIONS_COLUMNS) {
 	push @region_args, $region_data->{$_};
     }
     push(@region_args, $region_data->{"regionHandle"});
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_region_by_handle}, \@region_args);
+    my $res = $conn->query($SQL{update_region_by_handle}, \@region_args);
     return $res;
 }
 
 sub getRegionByUUID {
-    my $uuid = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_region_by_uuid}, $uuid);
+    my $conn = shift;
+    my $res = $conn->query($SQL{select_region_by_uuid}, \@_);
     my $count = @$res;
     if ($count > 0) {
 	return $res->[0];
@@ -89,8 +88,8 @@ sub getRegionByUUID {
 }
 
 sub getRegionByHandle {
-    my $handle = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_region_by_handle}, $handle);
+    my $conn = shift;
+    my $res = $conn->query($SQL{select_region_by_handle}, \@_);
     my $count = @$res;
     if ($count > 0) {
 	return $res->[0];
@@ -99,9 +98,8 @@ sub getRegionByHandle {
 }
 
 sub getRegionList {
-    my ($xmin, $ymin, $xmax, $ymax) = @_;
-    my @args = ($xmin, $ymin, $xmax, $ymax);
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_region_list}, \@args );
+    my $conn = shift;
+    my $res = $conn->query($SQL{select_region_list}, \@_ );
     my $count = @$res;
     if ($count > 0) {
 	return $res;
@@ -110,13 +108,13 @@ sub getRegionList {
 }
 
 sub deleteAllRegions {
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{delete_all_regions});
-    return $res;
+    my $conn = shift;
+    return $conn->($SQL{delete_all_regions});
 }
 
 sub deleteRegionByUUID {
-    my $uuid = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{delete_region_by_uuid}, $uuid);
+    my $conn = shift;
+    my $res = $conn->query($SQL{delete_region_by_uuid}, \@_);
     return $res;
 }
 

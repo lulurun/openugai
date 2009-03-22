@@ -8,24 +8,24 @@ use OpenUGAITester::AssetTester;
 use OpenUGAITester::InventoryTester;
 
 sub init {
-	UserTester::init();
-	GridTester::init();
-	AssetTester::init();
-	InventoryTester::init();
+    UserTester::init();
+    GridTester::init();
+    AssetTester::init();
+    InventoryTester::init();
 }
 
 sub SingleTest {
-	my $url = shift;
-	my $methodname = shift;
-	my @ARGS = @_;
-
-	if (!$OpenUGAITester::Config::HANDLER_LIST{$methodname}) {
-	    Carp::croak("unknown handler name: [$methodname]");
-	} else {
-	    my $handler = $OpenUGAITester::Config::HANDLER_LIST{$methodname};
-	    my $result = $handler->($url, @ARGS);
-		return $result;
-	}
+    my $url = shift;
+    my $methodname = shift;
+    my @ARGS = @_;
+    
+    if (!$OpenUGAITester::Config::HANDLER_LIST{$methodname}) {
+	Carp::croak("unknown handler name: [$methodname]");
+    } else {
+	my $handler = $OpenUGAITester::Config::HANDLER_LIST{$methodname};
+	my $result = $handler->($url, @ARGS);
+	return $result;
+    }
 }
 
 sub PerformanceCompare {

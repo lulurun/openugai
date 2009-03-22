@@ -1,7 +1,6 @@
-package OpenUGAI::Data::Users;
+package OpenUGAI::DBData::Users;
 
 use strict;
-use OpenUGAI::DBData;
 
 our %SQL = (
     select_all_users =>
@@ -84,9 +83,9 @@ sub CreateTemporaryUser {
 }
 
 sub getUserByName {
-    my ($first, $last) = @_;
+    my ($conn, $first, $last) = @_;
     my @args = ( lc($first), lc($last) );
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_user_by_name}, \@args);
+    my $res = $conn->query($SQL{select_user_by_name}, \@args);
     my $count = @$res;
     if ($count == 1) {
 	return $res->[0];
@@ -95,8 +94,8 @@ sub getUserByName {
 }
 
 sub getUserByUUID {
-    my $uuid = shift;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_user_by_uuid}, $uuid);
+    my ($conn, $uuid) = @_;
+    my $res = $conn->query($SQL{select_user_by_uuid}, $uuid);
     my $count = @$res;
     if ($count == 1) {
 	return $res->[0];
@@ -105,27 +104,27 @@ sub getUserByUUID {
 }
 
 sub createUser {
-    my $user = shift;
+    my ($conn, $user) = @_;
     my @params = ();
     foreach (@USERS_COLUMNS) {
 	push @params, $user->{$_};
     }
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{create_user}, \@params);
+    return $conn->query($SQL{create_user}, \@params);
 }
 
 sub updateUserByUUID {
-    my $user = shift;
+    my ($conn, $user) = @_;
     my @params = ();
     foreach (@USERS_COLUMNS) {
 	push @params, $user->{$_};
     }
     push @params, shift @params;
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_user_by_uuid}, \@params);
+    return $conn->query($SQL{update_user_by_uuid}, \@params);
 }
 
 sub getAllUsers {
-    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_all_users});
-    return $res;
+    my $conn = shift;
+    return $conn->query($SQL{select_all_users});
 }
 
 1;
