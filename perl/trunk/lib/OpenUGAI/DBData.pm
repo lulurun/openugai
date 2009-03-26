@@ -21,7 +21,7 @@ sub getSimpleResult {
     }
     eval {
 	$dbh = &DBHandler::getConnection($OpenUGAI::Global::DSN, $OpenUGAI::Global::DBUSER, $OpenUGAI::Global::DBPASS);
-	my $st = new Statement($dbh, $sql);
+	my $st = new OpenUGAI::Statement($dbh, $sql);
 	if ($args) { # TODO: WD did this
 	    $result = $st->exec(@db_args);
 	} else {
