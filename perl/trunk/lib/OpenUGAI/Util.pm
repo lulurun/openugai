@@ -74,6 +74,18 @@ sub XML2Obj {
 	return $xs->XMLin($xml);
 }
 
+sub client_login_trigger {
+    my ($param, $auth_key) = @_;
+    my $location = $param->{location} || "last";
+    my $command = $param->{command} || "login";
+    my $secondlife_url = "secondlife:///app/" . $command . "?first_name=" .
+	$param->{username} ."&last_name=" . $param->{lastname} .
+	"&location=" . $location . "&grid=Other&web_login_key=" .
+	$auth_key;
+    return "about:blank?redirect-http-hack=" .
+	&OpenUGAI::Util::URLEncode($secondlife_url);
+}
+
 use Data::Dump;
 sub Log {
     my $server_name = shift;
@@ -102,6 +114,8 @@ sub URLDecode {
   $str =~ s/%([0-9A-Fa-f][0-9A-Fa-f])/pack('H2', $1)/eg;
   return $str;
 }
+
+
 
 1;
 
