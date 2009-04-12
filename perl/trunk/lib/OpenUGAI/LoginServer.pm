@@ -11,7 +11,7 @@ use OpenUGAI::SampleApp;
 use OpenUGAI::UserServer::Config;
 use OpenUGAI::Data::Users;
 use OpenUGAI::Data::Agents;
-use OpenUGAI::LoginServer::Auth::OpenID;
+use OpenUGAI::LoginServer::OpenID;
 
 our %XMLRPCHandlers = (
 		       "login_to_simulator" => \&_login_to_simulator,
