@@ -3,7 +3,7 @@
 use OpenUGAI::Global;
 
 my $base_url = "http://openugai.wolfdrawer.net/perl/trunk";
-my $base_path = "/srv/www/openugai";
+my $base_path = "/var/www/openugai";
 
 # grid services
 $OpenUGAI::Global::USER_SERVER_URL = $base_url . "/user.cgi";

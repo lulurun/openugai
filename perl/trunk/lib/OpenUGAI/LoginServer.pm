@@ -20,8 +20,8 @@ our %XMLRPCHandlers = (
 our %HTTPHandlers = (
 		     "loginpage" => \&_show_login_page,
 		     "go" => \&_login_from_web_page,
-		     "openid_request" => \&OpenUGAI::LoginServer::Auth::OpenID::openid_request_handler,
-		     "openid_verify" => \&OpenUGAI::LoginServer::Auth::OpenID::openid_verify_handler,
+		     "openid_request" => \&OpenUGAI::LoginServer::OpenID::openid_request_handler,
+		     "openid_verify" => \&OpenUGAI::LoginServer::OpenID::openid_verify_handler,
 );
 
 sub StartUp {

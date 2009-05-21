@@ -1,4 +1,4 @@
-package OpenUGAI::LoginServer::Auth::OpenID;
+package OpenUGAI::LoginServer::OpenID;
 
 use strict;
 use OpenUGAI::Util;
