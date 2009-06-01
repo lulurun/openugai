@@ -184,6 +184,8 @@ sub _login_to_simulator {
         user_server_url => $OpenUGAI::Global::USER_SERVER_URL,
 	);
     # TODO: using $internal_server_url is a temporary solution
+    &OpenUGAI::Util::Log("login", "expect_user", $internal_server_url);
+    &OpenUGAI::Util::Log("login", "expect_user", \%region_request_params);
     my $region_response = undef;
     eval {
     	$region_response = &OpenUGAI::Util::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);

@@ -94,7 +94,7 @@ sub Log {
     if (ref $log) {
 	$log = Data::Dump::dump($log);
     }
-    open(FILE, ">>" . $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log");
+    open(FILE, ">>" . $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log") || Carp::croak("can not open $server_name log");
     print FILE $name . "\n";
     print FILE $log . "\n";
     print FILE "<<<<<<<<<<<=====================\n\n";

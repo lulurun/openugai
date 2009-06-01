@@ -15,6 +15,7 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
     Carp::croak("GET method not allowed");
 } else { # POST method, XMLRPC
     my $postdata = $param->{'POSTDATA'};
+    &OpenUGAI::Util::Log("grid", "postdata", $postdata);
     if (!$postdata) {
 	Carp::croak("no post data");
     } else {

@@ -62,9 +62,12 @@ sub _simulator_after_region_moved {
 sub _simulator_login {
     my $params = shift;
     my %response = ();
-    
     my $region_data = undef;
     my %new_region_data = ();
+
+    # check version
+    # my $inerface_version = $params->{major_interface_version}
+    # TODO : return faliled if (!isCurrentVersion($interface_version));
     if ($params->{"region_locx"} && $params->{"region_locy"}) {
 	my $region_handle = &getRegionHandle($params->{"region_locx"}, $params->{"region_locy"});
 	%new_region_data = (
@@ -96,6 +99,7 @@ sub _simulator_login {
 	    serverRemotingPort => $params->{remoting_port},
 	    owner_uuid => $params->{master_avatar_uuid},
 	    originUUID => $params->{UUID},
+	    access => 1,
 	    );
 	$region_data = &OpenUGAI::Data::Regions::getRegionByHandle($region_handle);
     } else {
