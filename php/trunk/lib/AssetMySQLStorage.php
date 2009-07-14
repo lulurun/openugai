@@ -16,8 +16,6 @@ Class AssetMySQLStorage {
 		$asset_rows = $this->db_conn->query(self::SELECT_ASSET, array($asset_id), true);
 		if (is_array($asset_rows) && count($asset_rows) == 1) {
 			return new Asset($asset_rows[0]);
-		} else {
-			throw new Exception("Asset not found: " . $asset_id);
 		}
 		return null;
 	}
