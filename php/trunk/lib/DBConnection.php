@@ -19,7 +19,7 @@ class DBConnection {
 			array_unshift($args, self::get_prepared_type_string($args));
 			call_user_func_array(array($stmt, 'bind_param'), $args);
 			if ($stmt->execute()) {
-				if (preg_match('/^select/', $sql)) {
+				if (preg_match('/^select/i', $sql)) {
 					if ($store_result) {
 						$stmt->store_result();
 					}

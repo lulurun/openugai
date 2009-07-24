@@ -2,13 +2,6 @@
 
 Class AssetServer extends RestServerBase {
 
-	private $storage;
-	
-	public function __construct(AssetMySQLStorage $storage) {
-		parent::__construct();
-		$this->storage = $storage;
-	}
-	
 	public function init() {
 		$this->registerHander("GET", "/^\/assets\/([0-9a-zA-Z\-]{36})/", new FetchAssetHandler($this->storage));
 		$this->registerHander("POST", "/^\/assets/", new StoreAssetHandler($this->storage));
@@ -17,17 +10,7 @@ Class AssetServer extends RestServerBase {
 
 }
 
-Class AssetServerHandlerBase {
-
-	protected $storage;
-	
-	public function __construct(AssetMySQLStorage $storage) {
-		$this->storage = $storage;
-	}
-	
-}
-
-Class FetchAssetHandler extends AssetServerHandlerBase Implements RestHandlerBase {
+Class FetchAssetHandler extends RestHandlerBase {
 
 	function handle($arg_list) {
 		if (count($arg_list) == 2) {
@@ -45,7 +28,7 @@ Class FetchAssetHandler extends AssetServerHandlerBase Implements RestHandlerBas
 
 }
 
-Class StoreAssetHandler extends AssetServerHandlerBase Implements RestHandlerBase {
+Class StoreAssetHandler extends RestHandlerBase {
 
 	function handle($arg_list) {
 		return "";
@@ -53,7 +36,7 @@ Class StoreAssetHandler extends AssetServerHandlerBase Implements RestHandlerBas
 
 }
 
-Class DeleteAssetHandler extends AssetServerHandlerBase Implements RestHandlerBase {
+Class DeleteAssetHandler extends RestHandlerBase {
 
 	function handle($arg_list) {
 		return "";

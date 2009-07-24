@@ -1,16 +1,23 @@
 <?php
 
-Interface RestHandlerBase {
+Class RestHandlerBase {
 
-	function handle(/* array */ $arg_list);
+	protected $storage;
+	
+	public function __construct(MySQLStorageBase $storage) {
+		$this->storage = $storage;
+	}
+	
+	protected function handle(/* array */ $arg_list) {}
 
 }
 
 Class RestServerBase {
 	
 	private $handlers = array();
+	protected $storage;
 
-	public function __construct() {
+	public function __construct(MySQLStorageBase $storage) {
 		$this->handlers = array(
 			"GET" => array(),
 			"POST" => array(),
@@ -18,6 +25,7 @@ Class RestServerBase {
 			"DELETE" => array(),
 			"HEAD" => array(),
 		);
+		$this->storage = $storage;
 	}	
 	
 	protected function registerHander(/* string */ $http_method, /* regexp */ $path_pattern, /* function */ $handler){

@@ -11,7 +11,8 @@ $db = "opensim_3di";
 $storage = new AssetMySQLStorage($host, $user, $pass, $db);
 
 $asset_server = new AssetServer($storage);
-$asset_server->run("GET", "/assets/00000000-0000-0000-0000-000000000000");
+$asset_server->init();
+$asset_server->run("GET", "/assets/fd9ad83a-4921-4b6e-8b8e-558556d9f503");
 
 ?>
 

@@ -36,6 +36,7 @@ ASSET_XML;
 		//$asset->access_time = $xmlobj->Data;
 		return $asset;
 	}
+
 }
 
 ?>

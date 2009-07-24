@@ -33,12 +33,11 @@ if ($storage->delete($asset1) != 1) {
 $success = false;
 try {
 	$asset2 = $storage->fetch($asset0->id);
-} catch (Exception $e) {
-	if ($e->getMessage() != "Asset not found: " . $asset0->id) {
-		echo "Check delete failed: " . $e->getMessage() . "\n";
-	} else {
+	if (!isset($asset2)) {
 		$success = true;
 	}
+} catch (Exception $e) {
+	echo "Check delete failed: " . $e->getMessage() . "\n";
 }
 
 if ($success) {
