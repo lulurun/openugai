@@ -4,15 +4,15 @@ Class AssetServer extends RestServerBase {
 
 	public function init() {
 		$this->registerHander("GET", "/^\/assets\/([0-9a-zA-Z\-]{36})/", new FetchAssetHandler($this->storage));
-		$this->registerHander("POST", "/^\/assets/", new StoreAssetHandler($this->storage));
-		$this->registerHander("DELETE", "/^\asets\/[0-9a-zA-Z\-]{36}/", new DeleteAssetHandler($this->storage));
+		$this->registerHander("POST", "/^\/assets/", NotImplementedHandler::GetInstance());
+		$this->registerHander("DELETE", "/^\asets\/[0-9a-zA-Z\-]{36}/", NotImplementedHandler::GetInstance());
 	}
 
 }
 
 Class FetchAssetHandler extends RestHandlerBase {
 
-	function handle($arg_list) {
+	public function handle($arg_list) {
 		if (count($arg_list) == 2) {
 			$asset = $this->storage->fetch($arg_list[1]);
 			if (isset($asset)) {
@@ -24,22 +24,6 @@ Class FetchAssetHandler extends RestHandlerBase {
 		} else {
 			header("HTTP/1.1 400 Bad Request");
 		}
-	}
-
-}
-
-Class StoreAssetHandler extends RestHandlerBase {
-
-	function handle($arg_list) {
-		return "";
-	}
-
-}
-
-Class DeleteAssetHandler extends RestHandlerBase {
-
-	function handle($arg_list) {
-		return "";
 	}
 
 }
