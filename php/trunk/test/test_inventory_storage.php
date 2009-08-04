@@ -1,9 +1,6 @@
 <?php
 
 require_once "general.inc";
-require_once "../lib/Inventory.php";
-require_once "../lib/InventoryXMLSerializer.php";
-require_once "../lib/InventoryMySQLStorage.php";
 
 $host = "192.168.20.150";
 $user = "opensim";

@@ -1,6 +1,7 @@
 <?php
 
 require_once "general.inc";
+require_once "../lib/AssetServer.php";
 
 $host = "192.168.20.150";
 $user = "opensim";

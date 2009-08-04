@@ -32,8 +32,8 @@ Class AssetMySQLStorage extends MySQLStorageBase {
 		}
 	}
 
-	public function delete(Asset $asset) {
-		$result = $this->db_conn->query(self::DELETE_ASSET, array($asset->id));
+	public function delete(/* uuid */ $asset_id) {
+		$result = $this->db_conn->query(self::DELETE_ASSET, array($asset_id));
 		if ($result == 1) {
 			return true;
 		} else {

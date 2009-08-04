@@ -15,19 +15,19 @@ Class RestHandlerBase {
 Class NotImplementedHandler extends RestHandlerBase {
 
 	private static $instance = null;
-	
+
 	public static function GetInstance() {
 		if (!isset($instance)) {
 			$instance = new NotImplementedHandler(null);
 		}
 		return $instance;
 	}
-	
+
 	public function handle($arg_list) {
 		echo("not implemented");
 	}
 
-	
+
 }
 
 Class RestServerBase {
@@ -63,6 +63,11 @@ Class RestServerBase {
 			if (preg_match($url_pattern, $path_info, $matches)) {
 				$found_method = true;
 				// TODO @@@ try ... catch
+				// TODO @@@ am i on the right way ?
+				if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
+					$postText = trim(file_get_contents('php://input'));
+					array_push($matches, $postText);
+				}
 				$handler->handle($matches);
 			}
 		}
