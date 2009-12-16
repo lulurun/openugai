@@ -8,7 +8,7 @@ our %SQL = (
     save_inventory_folder =>
     "REPLACE INTO inventoryfolders VALUES (?,?,?,?,?,?)",
     save_inventory_item =>
-    "REPLACE INTO inventoryitems VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    "REPLACE INTO inventoryitems VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     get_root_folder =>
     "SELECT * FROM inventoryfolders WHERE parentFolderID=? AND agentId=?",
     #"SELECT * FROM inventoryfolders WHERE agentId=?",
@@ -58,6 +58,7 @@ our @INVENTORYITEMS_COLUMNS = (
     "inventoryID",
     "avatarID",
     "parentFolderID",
+    "inventoryGroupPermissions",
 );
 
 sub saveInventoryFolder {

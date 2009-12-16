@@ -14,15 +14,15 @@ use OpenUGAI::Data::Agents;
 use OpenUGAI::LoginServer::OpenID;
 
 our %XMLRPCHandlers = (
-		       "login_to_simulator" => \&_login_to_simulator,
-);
+    "login_to_simulator" => \&_login_to_simulator,
+    );
 
 our %HTTPHandlers = (
-		     "loginpage" => \&_show_login_page,
-		     "go" => \&_login_from_web_page,
-		     "openid_request" => \&OpenUGAI::LoginServer::OpenID::openid_request_handler,
-		     "openid_verify" => \&OpenUGAI::LoginServer::OpenID::openid_verify_handler,
-);
+    "loginpage" => \&_show_login_page,
+    "go" => \&_login_from_web_page,
+    "openid_request" => \&OpenUGAI::LoginServer::OpenID::openid_request_handler,
+    "openid_verify" => \&OpenUGAI::LoginServer::OpenID::openid_verify_handler,
+    );
 
 sub StartUp {
     # for mod_perl startup
@@ -45,6 +45,26 @@ sub DispatchHTTPHandler {
     Carp::croak("unknown http method");
 }
 
+sub LLSDLoginHandler {
+    my $postdata = shift;
+    my $llsd_obj = &OpenUGAI::Util::XML2Obj($postdata);
+    &OpenUGAI::Util::Log("login", "llsd_login", $llsd_obj);
+    my $params = {
+	"first" => $llsd_obj->{map}->{string}->[0],
+	"last" => $llsd_obj->{map}->{string}->[1],
+	"passwd" => $llsd_obj->{map}->{string}->[2],
+    };
+    my $resp_obj = &_login_to_simulator($params);
+    #&OpenUGAI::Util::Log("login", "llsd_resp_obj", $resp_obj);
+    my $response_llsd_xml = "<llsd><map>";
+    foreach (keys %$resp_obj) {
+	$response_llsd_xml .= "<key>" . $_ . "</key>";
+	$response_llsd_xml .= "<string>" . $resp_obj->{$_} . "</string>";
+    }
+    $response_llsd_xml .= "</map></llsd>";
+    return $response_llsd_xml;
+}
+
 # ##################
 # HTTP handlers
 sub _show_login_page {
@@ -55,11 +75,11 @@ sub _show_login_page {
 sub _login_from_web_page {
     my $param = shift;
     my %auth_param = (
-		      "first" => $param->{username},
-		      "last"  => $param->{lastname},
-		      "passwd" => $param->{password},
-		      "weblogin" => $param->{weblogin},
-		      );
+	"first" => $param->{username},
+	"last"  => $param->{lastname},
+	"passwd" => $param->{password},
+	"weblogin" => $param->{weblogin},
+	);
     my $userinfo = &Authenticate(\%auth_param);
     if (!$userinfo) {
 	return &OpenUGAI::SampleApp::LoginForm($param, "wrong password");
@@ -71,18 +91,45 @@ sub _login_from_web_page {
 }
 sub Authenticate {
     my $params = shift;
-    my $user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
-    my $login_pass = $params->{passwd};
-    $login_pass =~ s/^\$1\$//;
-    if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
-	return undef;
+    if ($params->{last} =~ /^\@([^\@]+)$/) {
+	my $domain = $1;
+	# if ($domain eq "facebook")
+	my $user = {};
+	my $login_info = &OpenUGAI::Util::LoadDumpObject(
+	    &OpenUGAI::Util::GetDomainDir($domain) . "/" . $params->{first});
+	
+	&OpenUGAI::Util::Log("login", "user_info_file", $OpenUGAI::Global::DOMAIN_ACCOUNT_DIR . "/" . $domain . "/" . $params->{first});
+	&OpenUGAI::Util::Log("login", "user_info", $login_info->{info});
+
+	$user->{UUID} = $OpenUGAI::Global::DOMAIN_UUID_NAMESPACE->{$domain} . $login_info->{info}[0]->{uid};
+	$user->{username} = $login_info->{info}[0]->{first_name} . "_" . $login_info->{info}[0]->{last_name};
+	$user->{lastname} = "\@" . $domain;
+	$user->{created} = time;
+	$user->{profileImage} = $login_info->{info}[0]->{pic_square};
+	$user->{login_domain} = $domain;
+	$user->{homeRegion} = $OpenUGAI::Global::DEFAULT_HOME_REGION;
+	$user->{homeLocationX} = $OpenUGAI::Global::DEFAULT_HOME_LOCATION->{X};
+	$user->{homeLocationY} = $OpenUGAI::Global::DEFAULT_HOME_LOCATION->{Y};
+	$user->{homeLocationZ} = $OpenUGAI::Global::DEFAULT_HOME_LOCATION->{Z};
+	$user->{homeLookAtX} = $OpenUGAI::Global::DEFAULT_HOME_LOOKAT->{X};
+	$user->{homeLookAtY} = $OpenUGAI::Global::DEFAULT_HOME_LOOKAT->{Y};
+	$user->{homeLookAtZ} = $OpenUGAI::Global::DEFAULT_HOME_LOOKAT->{Z};
+	return $user;
+    } else {
+	my $user = &OpenUGAI::Data::Users::getUserByName($params->{first}, $params->{last});
+	my $login_pass = $params->{passwd};
+	$login_pass =~ s/^\$1\$//;
+	if ($user->{passwordHash} ne Digest::MD5::md5_hex($login_pass . ":")) {
+	    return undef;
+	}
+	if ($params->{weblogin}) {
+	    my $key = &OpenUGAI::Util::GenerateUUID();
+	    Storable::store($user, $OpenUGAI::Global::LOGINKEYDIR . "/" . $key);
+	    $user->{webLoginKey} = $key;
+	}
+	$user->{login_domain} = &OpenUGAI::Util::LocalDomain;
+	return $user;
     }
-    if ($params->{weblogin}) {
-	my $key = &OpenUGAI::Util::GenerateUUID();
-	Storable::store($user, $OpenUGAI::Global::LOGINKEYDIR . "/" . $key);
-	$user->{webLoginKey} = $key;
-    }
-    return $user;
 }
 
 # #################
@@ -95,7 +142,8 @@ sub _login_to_simulator {
     }
     # get the user (check passwd or from a saved webloginkey)
     my $user = undef;
-    if ($params->{passwd}) {
+    # TODO should be module for each domain 1: Authenticate
+    if ($params->{passwd} || $params->{last} =~ /^\@/) {
 	$user = &Authenticate($params);
     } elsif ($params->{web_login_key}) {
 	my $key = $OpenUGAI::Global::LOGINKEYDIR . "/" . $params->{web_login_key} || "unknown";
@@ -107,19 +155,22 @@ sub _login_to_simulator {
     if (!$user) {
 	return &_make_false_response("password not match", "Late! There is a wolf behind you");
     }
-    # check other online agent
-    my $agent = &OpenUGAI::Data::Agents::SelectAgent($user->{UUID});
-    if ($agent && $agent->{agentOnline}) {
-	# try to notify the online user agent
-	&OpenUGAI::Data::Agents::SetOnlineStatus($user->{UUID}, 0);
-	return &_make_false_response(
-	    "presence",
-	    "You appear to be already logged in. " .
-	    "If this is not the case please wait for your session to timeout. " .
-	    "If this takes longer than a few minutes please contact the grid owner. " .
-	    "Please wait 5 minutes if you are going to connect to a region nearby to" .
-	    "the region you were at previously."
-	    );
+    # duplicate login
+    my $agent = {};
+    if (&OpenUGAI::Util::isLocalDomain($user->{login_domain})) {
+	$agent = &OpenUGAI::Data::Agents::SelectAgent($user->{UUID});
+	if ($agent && $agent->{agentOnline}) {
+	    # try to notify the online user agent
+	    &OpenUGAI::Data::Agents::SetOnlineStatus($user->{UUID}, 0);
+	    return &_make_false_response(
+		"presence",
+		"You appear to be already logged in. " .
+		"If this is not the case please wait for your session to timeout. " .
+		"If this takes longer than a few minutes please contact the grid owner. " .
+		"Please wait 5 minutes if you are going to connect to a region nearby to" .
+		"the region you were at previously."
+		);
+	}
     }
     # get start region / location
     my $region_handle;
@@ -184,6 +235,8 @@ sub _login_to_simulator {
         user_server_url => $OpenUGAI::Global::USER_SERVER_URL,
 	);
     # TODO: using $internal_server_url is a temporary solution
+    # &OpenUGAI::Util::Log("login", "expect_user", $internal_server_url);
+    # &OpenUGAI::Util::Log("login", "expect_user", \%region_request_params);
     my $region_response = undef;
     eval {
     	$region_response = &OpenUGAI::Util::XMLRPCCall($internal_server_url, "expect_user", \%region_request_params);
@@ -191,6 +244,11 @@ sub _login_to_simulator {
     if ($@) {
 	return &_make_false_response("can not login", "failed to call expect_user: $@");
     }
+
+    my $inventory_data = {
+	InventoryArray => {},
+	RootFolderID => &OpenUGAI::Util::ZeroUUID,
+    };
     # make agent data at this point
     $agent->{UUID} = $user->{UUID};
     $agent->{sessionID} = $session_id;
@@ -204,9 +262,22 @@ sub _login_to_simulator {
     $agent->{logoutTime} = 0;
     $agent->{agentIP} = "";  # TODO @@@ 
     $agent->{agentPort} = 0; # TODO @@@
-    &OpenUGAI::Data::Agents::AgentLogon($agent);    
-    # contact with Inventory server
-    my $inventory_data = &_create_inventory_data($user->{UUID});
+    $agent->{regionName} = $grid_response->{region_name}; # for quick ref by foregin domain
+
+    # shoulde be module 2: update agent info
+    if (&OpenUGAI::Util::isLocalDomain($user->{login_domain})) {
+	&OpenUGAI::Data::Agents::AgentLogon($agent);
+	# contact with Inventory server
+	$inventory_data = &_create_inventory_data($user->{UUID});
+    } else {
+	my $domain_user_id = &OpenUGAI::Util::GetDomainUserID($user->{UUID});
+	my $obj = &OpenUGAI::Util::GetDomainUserInfo($user->{login_domain}, $domain_user_id);
+	$obj->{agent} = $agent;
+	&OpenUGAI::Util::Log("login", "save domain agent", $user->{login_domain});
+	&OpenUGAI::Util::Log("login", "save domain agent", $domain_user_id . " " . $user->{UUID});
+	&OpenUGAI::Util::Log("login", "save domain agent", $obj);
+	&OpenUGAI::Util::SaveDomainUserInfo($user->{login_domain}, $domain_user_id, $obj);
+    }
     # return to client
     my %response = (
 	# login info

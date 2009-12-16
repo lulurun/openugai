@@ -42,7 +42,9 @@ sub run {
 	    return;
 	}
     }
-    Carp::croak("404 not found");    
+    # not found handler
+    print $cgi->header( -type => 'text/xml', -charset => "utf-8" ), "404 not found";
+    &_not_found();
 }
 
 1;

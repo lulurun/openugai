@@ -7,6 +7,11 @@ our $RUNNING_MODE = "cgi";
 our $SIM_RECV_KEY = "null";
 our $SIM_SEND_KEY = "null";
 
+# LOGIN
+our $DEFAULT_HOME_REGION   = "1099511628032000";
+our $DEFAULT_HOME_LOCATION = { X => 128, Y => 128, Z => 100 };
+our $DEFAULT_HOME_LOOKAT   = { X => 0, Y => 0, Z => 0 };
+
 # ASSET
 #our $ASSET_SERVER_URL = "http://127.0.0.1:8003/";
 our $ASSET_SERVER_URL = "http://openugai.work.lulu/perl/trunk/asset.cgi";
@@ -49,6 +54,21 @@ our $OPENID_NS_SREG_1_0 = "http://openid.net/sreg/1.0";
 our $OPENID_NS_SREG_1_1 = "http://openid.net/extensions/sreg/1.1";
 our $OPENID_NS_AX_1_0 = "http://openid.net/srv/ax/1.0";
 our $OPENID_USE_AX = 1;
+
+# foreign services
+our $DOMAIN_ACCOUNT_DIR = "/var/www/openugai/domain";
+# temporary solution
+our $DOMAIN_PREFIX_LENGTH = 26;
+our $DOMAIN_USERID_LENGTH = 10;
+our $DOMAIN_UUID_NAMESPACE = {
+    "guest" =>    "aa1aaaaa-aaaa-aaaa-aaaa-aa",
+    "facebook" => "aa2aaaaa-aaaa-aaaa-aaaa-aa",
+};
+
+our $UUID_NAMESPACE_DOMAIN = {
+    "aa1aaaaa-aaaa-aaaa-aaaa-aa" => "guest",
+    "aa2aaaaa-aaaa-aaaa-aaaa-aa" => "facebook",
+};
 
 1;
 

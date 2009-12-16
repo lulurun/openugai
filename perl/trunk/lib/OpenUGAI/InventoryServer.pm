@@ -116,6 +116,8 @@ sub _new_item {
     my $post_data = shift;
     # TODO @@@ check inventory id
     my $request_obj = &OpenUGAI::Util::XML2Obj($post_data);
+    &OpenUGAI::Util::Log("inventory", "new_item", $request_obj);
+
     my $item = &_convert_to_db_item($request_obj->{Body});
     &OpenUGAI::Data::Inventory::saveInventoryItem($item);
     my $serializer = new XML::Serializer("true", "boolean");
@@ -161,23 +163,24 @@ sub _convert_to_db_item {
     my $ret = {
 	assetID => $item->{AssetID}->{Guid},
 	assetType => $item->{AssetType},
-	inventoryName => $item->{Name},
-	inventoryDescription => ref($item->{Description}) ? "" : $item->{Description},
-	inventoryNextPermissions => $item->{NextPermissions},
-	inventoryCurrentPermissions => $item->{CurrentPermissions},
-	invType => $item->{InvType},
-	creatorID => $item->{Creator}->{Guid},
 	inventoryBasePermissions => $item->{BasePermissions} || 0,
+	creationDate => $item->{CreationDate} || time,
+	creatorID => $item->{CreatorId}, # TODO ??? $item->{CreatorIdAsUuid}->{Guid}
+	inventoryCurrentPermissions => $item->{CurrentPermissions},
+	inventoryDescription => ref($item->{Description}) ? "" : $item->{Description},
 	inventoryEveryOnePermissions => $item->{EveryOnePermissions} || 0,
-	"salePrice" => 0,
-	"saleType" => 0,
-	"creationDate" => time,
-	"groupID" => "00000000-0000-0000-0000-000000000000",
-	"groupOwned" => 0,
-	"flags" => 0,
-	inventoryID => $item->{ID}->{Guid}, # TODO @@@ this can not be null
-	avatarID => $item->{Owner}->{Guid},
+	flags => $item->{Flags},
 	parentFolderID => $item->{Folder}->{Guid},
+	groupID => $item->{GroupID}->{Guid},
+	groupOwned => ($item->{GroupOwned} == "false") ? 0 : 1,
+	inventoryGroupPermissions => $item->{GroupPermissions} || 0,
+	inventoryID => $item->{ID}->{Guid}, # TODO @@@ this can not be null
+	invType => $item->{InvType} || 0,
+      	inventoryName => $item->{Name},
+	inventoryNextPermissions => $item->{NextPermissions},
+	avatarID => $item->{Owner}->{Guid},
+	salePrice => $item->{SalePrice},
+	saleType => $item->{SaleType},
     };
     return $ret;
 }

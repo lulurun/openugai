@@ -17,9 +17,9 @@ $OpenUGAI::Global::TMPLDIR = $base_path . "/perl/trunk/template";
 $OpenUGAI::Global::LOGINKEYDIR = $base_path . "/perl/trunk/loginkey";
 
 # db settings
-$OpenUGAI::Global::DSN = "dbi:mysql:openugai;host=localhost;";
-$OpenUGAI::Global::DBUSER = "opensim";
-$OpenUGAI::Global::DBPASS = "opensim";
+$OpenUGAI::Global::DSN = "dbi:mysql:opensim;host=localhost;";
+$OpenUGAI::Global::DBUSER = "lulu";
+$OpenUGAI::Global::DBPASS = "1u1urun";
 
 # ##########
 $OpenUGAI::Global::ASSET_STORAGE = "mysql";

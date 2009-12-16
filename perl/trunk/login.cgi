@@ -20,11 +20,20 @@ if ($ENV{"REQUEST_METHOD"} eq "GET") {
     }
 } else { # POST method, XMLRPC
     my $postdata = $param->{'POSTDATA'};
+    &OpenUGAI::Util::Log("login", "req", $postdata);
+
     if (!$postdata) {
 	Carp::croak("no post data");
     } else {
-	my $xmlrpc = new XML::RPC();
-	my $response = $xmlrpc->receive($postdata, \&OpenUGAI::LoginServer::DispatchXMLRPCHandler);
+	my $request_content_type = $ENV{CONTENT_TYPE} || ""; 
+	my $response = "";
+	if ($request_content_type eq "application/xml+llsd") {
+	    $response = &OpenUGAI::LoginServer::LLSDLoginHandler($postdata);
+	} else {
+	    my $xmlrpc = new XML::RPC();
+	    $response = $xmlrpc->receive($postdata, \&OpenUGAI::LoginServer::DispatchXMLRPCHandler);
+	}
+	&OpenUGAI::Util::Log("login", "resp", $response);
 	&MyCGI::outputXml("utf-8", $response);
     }
 }

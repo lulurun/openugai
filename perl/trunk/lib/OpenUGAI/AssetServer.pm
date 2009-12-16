@@ -11,9 +11,11 @@ use OpenUGAI::Global;
 
 our $AssetStorage;
 our $AssetPresentation;
+our $Memcached;
 
 sub init {
     my $this = shift;
+    my $options = shift;
     # register handlers
     $this->registerHandler( "GET", qr{^/assets/([0-9a-f\-]{36})$}, \&_fetch_asset_handler );
     $this->registerHandler( "POST", qr{^/assets/$}, \&_store_asset_handler );
@@ -21,17 +23,21 @@ sub init {
     # init
     eval {
 	$AssetPresentation = new OpenUGAI::AssetServer::Presentation("XML");
-	#my %option = (
+	#my $storage_option = {
 	#	      "root_dir" => "/tmp/assets",
 	#	      "presentation" => $AssetPresentation,
-	#	      );
+	#	      };
 	#$AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance("File", \%option);
-	my $option = {
+	my $storage_option = {
 	    dsn => $OpenUGAI::Global::DSN,
 	    user => $OpenUGAI::Global::DBUSER,
 	    pass => $OpenUGAI::Global::DBPASS,
 	};
-	$AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance("MySQL", $option);
+	$AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance("MySQL", $storage_option);
+	if ($options && $options->{has_mamcached} && $options->{memcached_server_addr}) {
+	    require 'OpenUGAI/AssetServer/Memcached.pm';
+	    $AssetStorage = new OpenUGAI::AssetServer::Memcached($options->{memcached_server_addr}, $AssetStorage);
+	}
     };
     if ($@) {
 	$AssetStorage = undef;
@@ -70,6 +76,7 @@ sub _store_asset_handler {
 sub _delete_asset_handler {
     Carp::croak("not implemented");
 }
+
 
 1;
 

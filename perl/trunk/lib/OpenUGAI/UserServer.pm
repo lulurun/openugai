@@ -12,24 +12,25 @@ use OpenUGAI::Data::Users;
 use OpenUGAI::Data::Agents;
 
 our %XMLRPCHandlers = (
-		       "get_user_by_name" => \&_get_user_by_name,
-		       "get_user_by_uuid" => \&_get_user_by_uuid,
-		       "get_avatar_appearance" => \&_get_avatar_appearance, # @@@ TODO: this method should be moved to other service or implemented in the hell.
-		       "update_avatar_appearance" => \&_update_avatar_appearance,
-		       "update_user_current_region" => \&_update_user_current_region,
-		       "logout_of_simulator" => \&_logout_of_simulator,
-		       "get_agent_by_uuid" => \&_get_agent_by_uuid,
-		       "agent_change_region" => \&_agent_change_region,
-		       "deregister_messageserver" => \&_deregister_messageserver,
-		       # not implemented
-		       "register_messageserver" => \&_not_implemented,
-		       "update_user_profile" => \&_not_implement,
-		       "add_new_user_friend" => \&_not_implemented,
-		       "remove_user_frind" => \&_not_implemented,
-		       "update_user_friend_perms" => \&_not_implemented,
-		       "get_user_friend_list" => \&_not_implemented,
-		       "get_avatar_picker_avatar" => \&_not_implemented,
-		       );
+    "get_user_by_name" => \&_get_user_by_name,
+    "get_user_by_uuid" => \&_get_user_by_uuid,
+    "get_avatar_appearance" => \&_get_avatar_appearance,
+    "update_avatar_appearance" => \&_update_avatar_appearance,
+    "update_user_current_region" => \&_update_user_current_region,
+    "logout_of_simulator" => \&_logout_of_simulator,
+    "get_agent_by_uuid" => \&_get_agent_by_uuid,
+    "agent_change_region" => \&_agent_change_region,
+    "deregister_messageserver" => \&_deregister_messageserver,
+    "check_auth_session" => \&_check_auth_session,
+    # not implemented
+    "register_messageserver" => \&_not_implemented,
+    "update_user_profile" => \&_not_implement,
+    "add_new_user_friend" => \&_not_implemented,
+    "remove_user_frind" => \&_not_implemented,
+    "update_user_friend_perms" => \&_not_implemented,
+    "get_user_friend_list" => \&_not_implemented,
+    "get_avatar_picker_avatar" => \&_not_implemented,
+    );
 
 sub _not_implemented {
     return &_make_false_response("not implemented yet");
@@ -51,27 +52,54 @@ sub DispatchXMLRPCHandler {
 
 # #################
 # Handlers
+sub _check_auth_session {
+    my $params = shift;
+    my $avatar_uuid = $params->{avatar_uuid};
+    my $session_id = $params->{session_id};
+    # TODO: check if this is a valid session
+
+    return { auth_session => "TRUE" };
+}
+
 sub _logout_of_simulator {
     my $params = shift;
+    if (!$params->{avatar_uuid} || !$params->{region_uuid} || !$params->{region_handle}) {
+	return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
+    }
     # TODO @@@ inform message server: NotifyMessageServersUserLoggOff
-    if ($params->{avatar_uuid} && $params->{region_uuid} && $params->{region_handle}) {
-	my $posx = $params->{region_pos_x} || 128;
-	my $posy = $params->{region_pos_y} || 128;
-	my $posz = $params->{region_pos_z} || 128;
-	my $lookatx = $params->{lookat_x} || 100;
-	my $lookaty = $params->{lookat_y} || 100;
-	my $lookatz = $params->{lookat_z} || 100;
-	my @args = (
-	    $params->{region_handle},
-	    $params->{region_uuid},
-	    "<$posx,$posy,$posz>",
-	    "<$lookatx,$lookaty,$lookatz>",
-	    time,
-	    $params->{avatar_uuid},
-	    );
+    my $posx = $params->{region_pos_x} || 128;
+    my $posy = $params->{region_pos_y} || 128;
+    my $posz = $params->{region_pos_z} || 128;
+    my $lookatx = $params->{lookat_x} || 100;
+    my $lookaty = $params->{lookat_y} || 100;
+    my $lookatz = $params->{lookat_z} || 100;
+    my @args = (
+	$params->{region_handle},
+	$params->{region_uuid},
+	"<$posx,$posy,$posz>",
+	"<$lookatx,$lookaty,$lookatz>",
+	time,
+	$params->{avatar_uuid},
+	);
+    my $domain = "";
+    my $domain_user_id = "";
+    if ($params->{avatar_uuid} =~ /^00/) {
+	# foregin domain login
+	$domain = &OpenUGAI::Util::GetDomainName($params->{avatar_uuid});
+	$domain_user_id = &OpenUGAI::Util::GetDomainUserID($params->{avatar_uuid});
+    }
+    if (&OpenUGAI::Util::isLocalDomain($domain)) {
 	&OpenUGAI::Data::Agents::AgentLogoff(@args);
     } else {
-	return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
+	# TODO : modulize me
+	my $obj = &OpenUGAI::Util::GetDomainUserInfo($domain, $domain_user_id);
+	$obj->{agent} = {
+	    currentRegion => $params->{region_uuid},
+	    currentHandle => $params->{region_handle},
+	    currentPos => "<$posx,$posy,$posz>",
+	    agentOnline => 0,
+	};
+	&OpenUGAI::Util::SaveDomainUserInfo($domain, $domain_user_id, $obj);
     }
 }
 
