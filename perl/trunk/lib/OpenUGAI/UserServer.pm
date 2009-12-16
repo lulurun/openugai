@@ -63,25 +63,43 @@ sub _check_auth_session {
 
 sub _logout_of_simulator {
     my $params = shift;
+    if (!$params->{avatar_uuid} || !$params->{region_uuid} || !$params->{region_handle}) {
+	return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
+    }
     # TODO @@@ inform message server: NotifyMessageServersUserLoggOff
-    if ($params->{avatar_uuid} && $params->{region_uuid} && $params->{region_handle}) {
-	my $posx = $params->{region_pos_x} || 128;
-	my $posy = $params->{region_pos_y} || 128;
-	my $posz = $params->{region_pos_z} || 128;
-	my $lookatx = $params->{lookat_x} || 100;
-	my $lookaty = $params->{lookat_y} || 100;
-	my $lookatz = $params->{lookat_z} || 100;
-	my @args = (
-	    $params->{region_handle},
-	    $params->{region_uuid},
-	    "<$posx,$posy,$posz>",
-	    "<$lookatx,$lookaty,$lookatz>",
-	    time,
-	    $params->{avatar_uuid},
-	    );
+    my $posx = $params->{region_pos_x} || 128;
+    my $posy = $params->{region_pos_y} || 128;
+    my $posz = $params->{region_pos_z} || 128;
+    my $lookatx = $params->{lookat_x} || 100;
+    my $lookaty = $params->{lookat_y} || 100;
+    my $lookatz = $params->{lookat_z} || 100;
+    my @args = (
+	$params->{region_handle},
+	$params->{region_uuid},
+	"<$posx,$posy,$posz>",
+	"<$lookatx,$lookaty,$lookatz>",
+	time,
+	$params->{avatar_uuid},
+	);
+    my $domain = "";
+    my $domain_user_id = "";
+    if ($params->{avatar_uuid} =~ /^00/) {
+	# foregin domain login
+	$domain = &OpenUGAI::Util::GetDomainName($params->{avatar_uuid});
+	$domain_user_id = &OpenUGAI::Util::GetDomainUserID($params->{avatar_uuid});
+    }
+    if (&OpenUGAI::Util::isLocalDomain($domain)) {
 	&OpenUGAI::Data::Agents::AgentLogoff(@args);
     } else {
-	return &_unknown_user_response; # TODO @@@ shoule be a "not enough params" error
+	# TODO : modulize me
+	my $obj = &OpenUGAI::Util::GetDomainUserInfo($domain, $domain_user_id);
+	$obj->{agent} = {
+	    currentRegion => $params->{region_uuid},
+	    currentHandle => $params->{region_handle},
+	    currentPos => "<$posx,$posy,$posz>",
+	    agentOnline => 0,
+	};
+	&OpenUGAI::Util::SaveDomainUserInfo($domain, $domain_user_id, $obj);
     }
 }
 
