@@ -34,9 +34,10 @@ our $GRID_SEND_KEY = "null";
 our $INVENTORY_SERVER_URL = "http://openugai.work.lulu/perl/trunk/inventory.cgi";
 
 # Directory Configuration
-our $LOGDIR = "/srv/www/openugai/perl/trunk/";
+our $LOGDIR = "/srv/www/openugai/logs";
 our $TMPLDIR = "/srv/www/openugai/perl/trunk/template";
-our $LOGINKEYDIR = "/srv/www/openugai/perl/trunk/loginkey";
+our $LOGINKEYDIR = "/srv/www/openugai/loginkey";
+our $DATADIR = "/srv/www/openugai/data";
 
 # DB Settings
 our $DSN = "dbi:mysql:home_test;host=localhost;";

@@ -32,7 +32,7 @@ $OpenUGAI::Global::RUNNING_MODE = "mod_perl";
 }
 # asset server
 {
-#    &OpenUGAI::AssetServer::StartUp();
+    &OpenUGAI::AssetServer::StartUp();
 }
 
 &OpenUGAI::Util::Log("startup", "OpenUGAI init", "OpenUGAI started ...");

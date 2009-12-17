@@ -90,13 +90,14 @@ use Data::Dump;
 sub Log {
     my $server_name = shift;
     my $name = shift;
-    my $log = shift;
-    if (ref $log) {
-	$log = Data::Dump::dump($log);
+    my $data = shift;
+    if (ref $data) {
+	$data = Data::Dump::dump($data);
     }
-    open(FILE, ">>" . $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log") || Carp::croak("can not open $server_name log");
+    my $log_file = $OpenUGAI::Global::LOGDIR . "/" . $server_name . ".log";
+    open(FILE, ">>" . $log_file) || Carp::croak("can not open $log_file");
     print FILE $name . "\n";
-    print FILE $log . "\n";
+    print FILE $data . "\n";
     print FILE "<<<<<<<<<<<=====================\n\n";
     close(FILE);
 }
