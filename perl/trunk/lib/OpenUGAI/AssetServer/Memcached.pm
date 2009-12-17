@@ -15,7 +15,7 @@ sub new {
         memcached => $memcached,
         storage => $storage,
     };
-    return bless $this, $fields;
+    return bless $fields, $this;
 }
 
 sub fetchAsset {

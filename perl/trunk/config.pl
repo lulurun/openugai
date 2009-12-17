@@ -14,7 +14,8 @@ $OpenUGAI::Global::INVENTORY_SERVER_URL = $base_url . "/inventory.cgi";
 # log files
 $OpenUGAI::Global::LOGDIR = $base_path . "/logs";
 $OpenUGAI::Global::TMPLDIR = $base_path . "/perl/trunk/template";
-$OpenUGAI::Global::LOGINKEYDIR = $base_path . "/perl/trunk/loginkey";
+$OpenUGAI::Global::LOGINKEYDIR = $base_path . "/loginkey";
+$OpenUGAI::Global::DATADIR = $base_path . "/data";
 
 # db settings
 $OpenUGAI::Global::DSN = "dbi:mysql:opensim;host=localhost;";

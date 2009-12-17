@@ -12,6 +12,19 @@ use OpenUGAI::Global;
 our $AssetStorage;
 our $AssetPresentation;
 our $Memcached;
+our $Instance;
+
+sub StartUp {
+    my $config = undef; # TODO @@@ : = OpenUGAI::Config::GetConfig();
+    my $options = {
+	has_memcached => 1,
+	memcached_server_addr => "127.0.0.1:11211",
+    };
+    
+    $Instance = new OpenUGAI::AssetServer();
+    $Instance->init($options);
+    &OpenUGAI::Util::Log("asset", "init $$", "asset server initialized");
+}
 
 sub init {
     my $this = shift;
@@ -20,6 +33,8 @@ sub init {
     $this->registerHandler( "GET", qr{^/assets/([0-9a-f\-]{36})$}, \&_fetch_asset_handler );
     $this->registerHandler( "POST", qr{^/assets/$}, \&_store_asset_handler );
     $this->registerHandler( "DELETE", qr{^/assets/([0-9a-f\-]{36})$}, \&_delete_asset_handler );
+
+    $this->registerHandler( "POST", qr{^/readsession/(start|stop)/([0-9a-f\-]{36})$}, \&_readsession_handler );
     # init
     eval {
 	$AssetPresentation = new OpenUGAI::AssetServer::Presentation("XML");
@@ -34,8 +49,9 @@ sub init {
 	    pass => $OpenUGAI::Global::DBPASS,
 	};
 	$AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance("MySQL", $storage_option);
-	if ($options && $options->{has_mamcached} && $options->{memcached_server_addr}) {
+	if ($options && $options->{has_memcached} && $options->{memcached_server_addr}) {
 	    require 'OpenUGAI/AssetServer/Memcached.pm';
+	    &OpenUGAI::Util::Log("asset", "init $$", "Load Memcached");
 	    $AssetStorage = new OpenUGAI::AssetServer::Memcached($options->{memcached_server_addr}, $AssetStorage);
 	}
     };
@@ -43,6 +59,7 @@ sub init {
 	$AssetStorage = undef;
 	$AssetPresentation = undef;
 	Carp::croak("can not start AssetServer:\n$@");
+	&OpenUGAI::Util::Log("asset", "init $$", "can not start AssetServer:\n$@");
     }
 }
 
@@ -58,6 +75,7 @@ sub _fetch_asset_handler {
     my $asset = $AssetStorage->fetchAsset($id);
     if (!$asset) {
 	# log asset not found
+	print $cgi->header( -type => 'text/xml', -charset => "utf-8", -status => "404 Not Found" ), "";
     } else {
 	$response = $AssetPresentation->serialize($asset);
     }
@@ -77,6 +95,22 @@ sub _delete_asset_handler {
     Carp::croak("not implemented");
 }
 
+sub _readsession_handler {
+    my ($act, $session_id, $cgi) = @_;
+    my $session_file = $OpenUGAI::Global::DATADIR . "/" . $session_id;
+    if ($act eq "start") {
+	if (!open(FILE, ">$session_file")) {
+	    Carp::croak("can not open readsession: " . $session_file);
+	    print $cgi->header( -type => 'text/xml', -charset => "utf-8", -status => "403 Forbidden" ), "";
+	}
+	close(FILE);
+    } else { # stop
+	if (-e $session_file) {
+	    unlink($session_file);
+	}
+    }
+    print $cgi->header( -type => 'text/xml', -charset => "utf-8", -status => "200 OK" ), "OK";
+}
 
 1;
 

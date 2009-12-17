@@ -8,18 +8,18 @@ use OpenUGAI::Global; # temporary!
 sub new {
     my $this = shift;
     bless {
-	GET => {},
-	POST => {},
-	PUT => {},
-	DELETE => {},
+	hGET => undef,
+	hPOST => undef,
+	hPUT => undef,
+	hDELETE => undef,
 	logger => new OpenUGAI::Util::Logger($OpenUGAI::Global::LOGDIR, "REST"),
     }, $this;
 }
 
 sub registerHandler {
     my ($this, $method, $path, $handler) = @_;
-    return 0 if (! $this->{$method});
-    $this->{$method}->{$path} = $handler;
+    my $method_key = "h" . $method;
+    $this->{$method_key}->{$path} = $handler;
     return 1;
 }
 
@@ -28,13 +28,12 @@ sub run {
     $arg = undef if (!$arg);
     my $cgi = new CGI($arg);
 
-    $this->{logger}->log("path_info", $cgi->path_info);
-    $this->{logger}->log("in coming postdata", $cgi->param("POSTDATA"));
-
-    while ( my ($path_pattern, $handler) = each(%{$this->{$cgi->request_method}}) ) {
-	if ($cgi->path_info =~ $path_pattern) {
+    my $method_key = "h" . $cgi->request_method;
+    my $handlers = $this->{$method_key};
+    foreach ( keys %$handlers ) {
+	if (my @m = $cgi->path_info =~ $_) {
 	    eval {
-		$handler->($1, $cgi);
+		$handlers->{$_}->(@m, $cgi);
 	    };
 	    if ($@) {
 		$this->{logger}->log("error", $@);
@@ -43,8 +42,7 @@ sub run {
 	}
     }
     # not found handler
-    print $cgi->header( -type => 'text/xml', -charset => "utf-8" ), "404 not found";
-    &_not_found();
+    print $cgi->header( -type => 'text/xml', -charset => "utf-8", -status => "404 Not Found $$" ), "";
 }
 
 1;
