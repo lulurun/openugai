@@ -4,19 +4,23 @@ use strict;
 use OpenUGAI::DBData;
 
 our %SQL = (
-	    get_avatar_appearance =>
-	    "select * from avatarappearance where owner=?",
-	    update_avatar_appearance =>
-	    "replace into avatarappearance values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-	    update_avatar_appearance_raw_data =>
-	    "replace into avatarappearance values(?,?,X?,X?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-	    get_avatar_attachment =>
-	    "select * from avatarattachments where uuid=?",
-	    update_avatar_attachment =>
-	    "replace into avatarattachments values(?,?,?,?)",
-	    delete_avatar_attachments =>
-	    "delete from avatarattachments where uuid=?",
-);
+    get_avatar_appearance =>
+    "select * from avatarappearance where owner=?",
+    update_avatar_appearance =>
+    "replace into avatarappearance values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    update_avatar_appearance_raw_data =>
+    "replace into avatarappearance values(?,?,X?,X?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    get_avatar_attachment =>
+    "select * from avatarattachments where uuid=?",
+    update_avatar_attachment =>
+    "replace into avatarattachments values(?,?,?,?)",
+    delete_avatar_attachments =>
+    "delete from avatarattachments where uuid=?",
+    get_avatar_3di =>
+    "select * from avatardata_3di where user_id=?",
+    update_avatar_3di =>
+    "replace into avatardata_3di values(?,?)",    
+    );
 
 our @ATTACHMENT_COLUMNS = (
    "UUID",
@@ -113,6 +117,27 @@ sub UpdateAppearance_RawData {
 	push @args, $appearance->{lc($_)}; # stupid lc because stupid opensim impl
     }
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_appearance_raw_data}, \@args);
+    return $res;
+}
+
+# #############
+# Avatar 3di
+sub GetAvatarID3Di {
+    my $owner = shift;
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{get_avatar_3di}, $owner);
+    my $count = @$res;
+    if ($count == 1) {
+	return $res->[0];
+    } else {
+	return undef;
+    }
+}
+
+sub UpdateAvatar3Di {
+    my $user_id = shift;
+    my $avatar_id = shift;
+    my @args = ($user_id, $avatar_id);
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{update_avatar_3di}, \@args);
     return $res;
 }
 
