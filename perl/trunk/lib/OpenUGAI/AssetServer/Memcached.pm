@@ -5,10 +5,10 @@ use Cache::Memcached;
 
 sub new {
     my $this = shift;
-    my $memcached_server_addr = shift;
+    my $memcached_server_list = shift;
     my $storage = shift;
     my $memcached = Cache::Memcached->new({
-        servers => [$memcached_server_addr],
+        servers => $memcached_server_list,
         #compress_threshold => 10_000,
 					  });
     my $fields = {
@@ -36,5 +36,12 @@ sub storeAsset {
     $this->{storage}->storeAsset($key, $val);
     $this->{memcached}->set($key, $val);
 }
+
+sub getCacheStatus {
+    my $this = shift;
+    my $stats = $this->{memcached}->stats;
+    return Data::Dump::dump $stats;
+}
+
 
 1;

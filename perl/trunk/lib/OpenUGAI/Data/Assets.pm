@@ -7,7 +7,7 @@ our %SQL = (
     select_asset_by_uuid =>
     "SELECT * FROM assets WHERE id=?",
     insert_asset =>
-    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?)"
+    "REPLACE INTO assets VALUES (?,?,?,?,?,?,?,?,?)",
     );
 
 our @ASSETS_COLUMNS = (
@@ -18,6 +18,9 @@ our @ASSETS_COLUMNS = (
     "temporary",
     "data",
     "id",
+    "create_time",
+    "access_time",
+
     );
 
 sub SelectAsset {

@@ -16,9 +16,18 @@ our $Instance;
 
 sub StartUp {
     my $config = undef; # TODO @@@ : = OpenUGAI::Config::GetConfig();
+    my $file = "/var/www/openugai/perl/trunk/cache_server.list";
+    my @memcached_server_list = ();
+    open(FILE, $file) || Carp::croak("can not open $file");
+    while(<FILE>) {
+	chomp;
+	push(@memcached_server_list, $_) if ($_);
+    }
+    close(FILE);
+    
     my $options = {
 	has_memcached => 1,
-	memcached_server_addr => "127.0.0.1:11211",
+	memcached_server_list => \@memcached_server_list,
     };
     
     $Instance = new OpenUGAI::AssetServer();
@@ -35,6 +44,7 @@ sub init {
     $this->registerHandler( "DELETE", qr{^/assets/([0-9a-f\-]{36})$}, \&_delete_asset_handler );
 
     $this->registerHandler( "POST", qr{^/readsession/(start|stop)/([0-9a-f\-]{36})$}, \&_readsession_handler );
+    $this->registerHandler( "GET", qr{^/cache_status$}, \&_get_cache_status_handler );
     # init
     eval {
 	$AssetPresentation = new OpenUGAI::AssetServer::Presentation("XML");
@@ -49,10 +59,12 @@ sub init {
 	    pass => $OpenUGAI::Global::DBPASS,
 	};
 	$AssetStorage = &OpenUGAI::AssetServer::Storage::GetInstance("MySQL", $storage_option);
-	if ($options && $options->{has_memcached} && $options->{memcached_server_addr}) {
+	if ($options && $options->{has_memcached} && $options->{memcached_server_list}) {
 	    require 'OpenUGAI/AssetServer/Memcached.pm';
 	    &OpenUGAI::Util::Log("asset", "init $$", "Load Memcached");
-	    $AssetStorage = new OpenUGAI::AssetServer::Memcached($options->{memcached_server_addr}, $AssetStorage);
+	    $AssetStorage =
+		OpenUGAI::AssetServer::Memcached->new($options->{memcached_server_list}, $AssetStorage);
+
 	}
     };
     if ($@) {
@@ -111,6 +123,14 @@ sub _readsession_handler {
     }
     print $cgi->header( -type => 'text/xml', -charset => "utf-8", -status => "200 OK" ), "OK";
 }
+
+sub _get_cache_status_handler {
+    my $this = shift;
+    my $cgi = shift;
+    my $status = $AssetStorage->getCacheStatus;
+    print $cgi->header( -type => 'text/html', -charset => "utf-8" ), $status;
+}
+
 
 1;
 
