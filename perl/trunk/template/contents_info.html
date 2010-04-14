@@ -1,0 +1,88 @@
+<head>
+<meta http-equiv="content-type" content="text/html;charset=utf-8">
+<title>Contents Info</title>
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/mylib.js"></script>
+</head>
+<body>
+
+<a href="/index.html">INDEX</a>
+<hr>
+
+<table width="800">
+<tr>
+<td width="600">
+<div id="contents_info">
+Loading ...
+</div>
+</td>
+
+<td width="200">
+<div id="liveregion_list">
+Loading ...
+</div>
+</td>
+</tr>
+</table>
+<div>
+View in Private Mode | Join a Random Region
+</div>
+
+
+<script type="text/javascript">
+var gContentsUUID = "{%CONTENTS_UUID%}";
+var gAPIURL = "http://openugai.wolfdrawer.net/grid2.cgi";
+
+$(document).ready(function() {
+  LoadContentsInfo();
+  LoadLiveRegions();
+});
+
+function LoadLiveRegions() {
+}
+
+function LoadContentsInfo() {
+  var url = gAPIURL + "/contents/info/" + gContentsUUID;
+  $.ajax({
+    type: "GET",
+    contentType: "text/plain",
+    url: url,
+    dataType: 'json',
+    success: function(data) {
+      var html = "";
+      for(var i in data.list) {
+        html += _makeContentsItem(data.list[i]);
+      }
+      $('#contents_info').html(html);
+    }
+  });
+}
+
+function _makeContentsItem(contents) {
+  var html = '<ul>' + contents.name;
+  html += '<li>Description: ' + contents.desc + '</li>';  
+  html += '<li><a href="' + contents.url + '">' + contents.url + '</a></li>';  
+  for(var i in contents.data) {
+    html += _makeContentsDataInfo(contents.data[i]);
+  }
+  html += "</ul>";
+  return html;
+}
+
+function _makeContentsDataInfo(data) {
+  var url = gAPIURL + "/contents/data/" + data.id;
+  var html = '<ul>';
+  html += '<li>Size: ' + data.size + ' ';  
+  html += '<a href="' + url + '">Quick start</a></li>';  
+  html += '</ul>';
+  return html;
+}
+
+</script>
+
+<script type="text/javascript">
+
+</script>
+
+</body>
+</html>

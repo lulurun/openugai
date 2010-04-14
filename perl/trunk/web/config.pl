@@ -1,21 +1,24 @@
-# this file can be used to overwrite the defualt configuration
-
 use OpenUGAI::Global;
 
-my $base_url = "http://openugai.wolfdrawer.net";
-my $base_path = "/var/www/openugai/perl/trunk";
+$OpenUGAI::Global::BASE_DIR = "/var/www/openugai/perl/trunk";
+$OpenUGAI::Global::BASE_URL = "http://openugai.wolfdrawer.net";
 
 # grid services
-$OpenUGAI::Global::USER_SERVER_URL = $base_url . "/user.cgi";
-$OpenUGAI::Global::GRID_SERVER_URL = $base_url . "/grid.cgi";
-$OpenUGAI::Global::ASSET_SERVER_URL = $base_url . "/asset.cgi";
-$OpenUGAI::Global::INVENTORY_SERVER_URL = $base_url . "/inventory.cgi";
+$OpenUGAI::Global::USER_SERVER_URL = $OpenUGAI::Global::BASE_DIR . "/user.cgi";
+$OpenUGAI::Global::GRID_SERVER_URL = $OpenUGAI::Global::BASE_DIR . "/grid.cgi";
+$OpenUGAI::Global::ASSET_SERVER_URL = $OpenUGAI::Global::BASE_DIR . "/asset.cgi";
+$OpenUGAI::Global::INVENTORY_SERVER_URL = $OpenUGAI::Global::BASE_DIR . "/inventory.cgi";
 
-# log files
-$OpenUGAI::Global::LOGDIR = $base_path . "/logs";
-$OpenUGAI::Global::TMPLDIR = $base_path . "/template";
-$OpenUGAI::Global::LOGINKEYDIR = $base_path . "/loginkey";
-$OpenUGAI::Global::DATADIR = $base_path . "/data";
+# DIRs
+$OpenUGAI::Global::LOGDIR = $OpenUGAI::Global::BASE_DIR . "/logs";
+$OpenUGAI::Global::TMPLDIR = $OpenUGAI::Global::BASE_DIR . "/template";
+$OpenUGAI::Global::LOGINKEYDIR = $OpenUGAI::Global::BASE_DIR . "/loginkey";
+$OpenUGAI::Global::DATADIR = $OpenUGAI::Global::BASE_DIR . "/data";
+$OpenUGAI::Global::WEBDIR = $OpenUGAI::Global::BASE_DIR . "/web";
+
+$OpenUGAI::Global::Region_DIR = $OpenUGAI::Global::DATADIR . "/Regions";
+$OpenUGAI::Global::Contents_DIR = $OpenUGAI::Global::WEBDIR . "/Contents";
+$OpenUGAI::Global::Contents_URL = $OpenUGAI::Global::BASE_URL . "/Contents";
 
 # db settings
 $OpenUGAI::Global::DSN = "dbi:mysql:space;host=localhost;";

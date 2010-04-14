@@ -7,19 +7,64 @@
 </head>
 <body>
 
+<a href="/index.html">INDEX</a>
+<hr>
+
+<h3>Contents</h3>
 <div id="contents_list">
 Loading ...
 </div>
 
+<h3>Live Regions</h3>
+<div id="region_list">
+Loading ...
+</div>
+
 <script type="text/javascript">
-var gURL = "http://openugai.wolfdrawer.net/grid2.cgi";
+var gAPIURL = "http://openugai.wolfdrawer.net/grid2.cgi";
+var gWebURL = "http://openugai.wolfdrawer.net/space.cgi";
 
 $(document).ready(function() {
   LoadContents();
+  LoadRegions();
 });
 
+function LoadRegions() {
+  var url = gAPIURL + "/region/list";
+  $.ajax({
+    type: "GET",
+    contentType: "text/plain",
+    url: url,
+    dataType: 'json',
+    success: function(data) {
+      var html = "";
+      if (data.count == 0) {
+        html = "no Live Region";
+      } else {
+        html = "<ul>";
+        for(var i in data.list) {
+          html += _makeRegionItem(data.list[i]);
+        }
+        html += "</ul>";
+      }
+      $('#region_list').html(html);
+    }
+  });  
+}
+
+function _makeRegionItem(data) {
+  var url_region_page = gWebURL + "/region/info/" + data.client_uuid;
+  var url_viewer_page = gWebURL + "/join/" + data.client_uuid;
+  var html = '<li>';
+  html += '<a href="' + url_region_page + '">' + data.ip_addr + ":" + data.udp_port + '</a>';
+  html += ' | ';
+  html += '<a href="' + url_viewer_page + '">Join</a>';
+  html += '</li>';
+  return html;
+}
+
 function LoadContents() {
-  var url = gURL + "/contents/list";
+  var url = gAPIURL + "/contents/list";
   $.ajax({
     type: "GET",
     contentType: "text/plain",
@@ -36,7 +81,7 @@ function LoadContents() {
 }
 
 function _makeContentsItem(contents) {
-  var url = gURL + "/contents/info/" + contents.id;
+  var url = gWebURL + "/contents/info/" + contents.id;
   var html = '<ul><a href="' + url + '">' + contents.name + '</a>';
   html += '<li>Description: ' + contents.desc + '</li>';  
   html += '<li><a href="' + contents.url + '">' + contents.url + '</a></li>';  
@@ -48,7 +93,7 @@ function _makeContentsItem(contents) {
 }
 
 function _makeContentsDataInfo(data) {
-  var url = gURL + "/contents/data/" + data.id;
+  var url = gAPIURL + "/contents/data/" + data.id;
   var html = '<ul>';
   html += '<li>Size: ' + data.size + ' ';  
   html += '<a href="' + url + '">Quick start</a></li>';  

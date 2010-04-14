@@ -5,6 +5,7 @@ use OpenUGAI::Global;
 use OpenUGAI::Util;
 use OpenUGAI::Data::DynamicGridData;
 
+# ### From OpenSim ###
 sub AddRegion {
     my $req_data = shift;
     my ($x, $y) = &_find_available_coord();
@@ -45,13 +46,20 @@ sub DeleteRegion {
     }
 }
 
+sub UpdateContentsDownloadStatus {
+    my $id = shift;
+    # TODO @@@ select for update
+    # TODO @@@ update, commit
+}
+
+# admin handler
 sub SaveContentsData {
     my ($cgi, $form_name, $contents_uuid, $type) = @_;
     my $file = $cgi->param($form_name);
     return if (!$file);
     my $fh = $cgi->upload($form_name) or Carp::croak("Invalid file handle returned");
     my $file_uuid = OpenUGAI::Util::GenerateUUID();
-    my $file_name = $OpenUGAI::Global::Contents_Dir . "/" . $file_uuid;
+    my $file_name = $OpenUGAI::Global::Contents_DIR . "/" . $file_uuid;
     open(OUT, ">$file_name") or Carp::croak("Can't open $file_name");
     binmode OUT;
     my $buffer;
@@ -63,7 +71,7 @@ sub SaveContentsData {
     my $file_size = -s $file_name;
     my $req = {
 	contents_uuid => $contents_uuid,
-	data_uuid => OpenUGAI::Util::GenerateUUID(),
+	data_uuid => $file_uuid,
 	size => $file_size,
 	type => $type,
     };
@@ -79,7 +87,7 @@ sub AddContentsInfo {
 # Subs
 sub _get_region_file {
     my ($ip, $x, $y) = @_;
-    return $OpenUGAI::Global::Region_Dir . "/" . $x . "_" . $y;
+    return $OpenUGAI::Global::Region_DIR . "/" . $x . "_" . $y;
 }
 
 sub _get_coord() {

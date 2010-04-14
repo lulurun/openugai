@@ -7,9 +7,11 @@ our %SQL = (
     select_region_by_uuid =>
     "SELECT * FROM LiveRegions WHERE client_uuid=?",
     insert_region =>
-    "REPLACE INTO LiveRegions VALUES (?,?,?,?,?,?)",
+    "REPLACE INTO LiveRegions VALUES (?,?,?,?,?,?,?)",
     delete_region =>
     "DELETE from LiveRegions WHERE client_uuid=?",
+    select_regions =>
+    "select * from LiveRegions",
     # contents
     insert_contents =>
     "REPLACE INTO Contents VALUES (?,?,?,?)",
@@ -17,6 +19,8 @@ our %SQL = (
     "REPLACE INTO ContentsData VALUES (?,?,?,?)",
     select_contents_with_data =>
     "select * from Contents inner join ContentsData using(contents_uuid)",
+    select_contents_with_data_by_id =>
+    "select * from Contents inner join ContentsData using(contents_uuid) where contents_uuid=?",
     );
 
 our @LIVEREGIONS_COLUMNS =
@@ -27,6 +31,7 @@ our @LIVEREGIONS_COLUMNS =
      "api_port",
      "current_contents_uuid",
      "online_avatar",
+     "start_time",
      );
 
 our @CONTENTS_COLUMNS =
@@ -45,8 +50,19 @@ our @CONTENTSDATA_COLUMNS =
      "type",
      );
 
+sub GetRegionList {
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_regions});
+    return $res;
+}
+
 sub GetContentsList {
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_contents_with_data});
+    return $res;
+}
+
+sub GetContentsInfo {
+    my $id = shift;
+    my $res = &OpenUGAI::DBData::getSimpleResult($SQL{select_contents_with_data_by_id}, $id);
     return $res;
 }
 
@@ -82,6 +98,7 @@ sub saveRegion {
     push @args, $region->{api_port};
     push @args, "";
     push @args, 0;
+    push @args, undef;
 
     my $res = &OpenUGAI::DBData::getSimpleResult($SQL{insert_region}, \@args);
     return $res;

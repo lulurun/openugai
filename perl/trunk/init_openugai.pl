@@ -1,5 +1,4 @@
 use OpenUGAI::Global;
-use OpenUGAI::Util;
 use OpenUGAI::LoginServer;
 use OpenUGAI::UserServer;
 use OpenUGAI::GridServer;
@@ -7,14 +6,14 @@ use OpenUGAI::GridServer2;
 use OpenUGAI::AssetServer;
 use OpenUGAI::InventoryServer;
 use OpenUGAI::AvatarSelectorServer;
+use OpenUGAI::SpaceWeb;
 require "config.pl";
 
 use LWP::Protocol::http;
 @LWP::Protocol::http::EXTRA_SOCK_OPTS = ( SendTE => 0 );
-
 $OpenUGAI::Global::RUNNING_MODE = "mod_perl";
 
-&OpenUGAI::Util::Log("startup", "OpenUGAI init", "Starting OpenUGAI ...");
+Apache2::ServerRec::warn("Starting OpenUGAI ...");
 
 # login server
 {
@@ -44,8 +43,12 @@ $OpenUGAI::Global::RUNNING_MODE = "mod_perl";
 {
     &OpenUGAI::GridServer2::StartUp();
 }
+# spaceweb
+{
+    &OpenUGAI::SpaceWeb::StartUp();
+}
 
-&OpenUGAI::Util::Log("startup", "OpenUGAI init", "OpenUGAI started ...");
+Apache2::ServerRec::warn("Starting OpenUGAI ...");
 
 1;
 

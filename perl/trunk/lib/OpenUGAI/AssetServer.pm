@@ -82,7 +82,7 @@ sub handler {
 
 # Handler Functions
 sub _fetch_asset_handler {
-    my ($id, $cgi) = @_;
+    my ($this, $cgi, $id) = @_;
     my $response = "<ERROR />";
     my $asset = $AssetStorage->fetchAsset($id);
     if (!$asset) {
@@ -95,7 +95,7 @@ sub _fetch_asset_handler {
 }
 
 sub _store_asset_handler {
-    my ($id, $cgi) = @_; 
+    my ($this, $cgi, $id) = @_; 
     my $response = "<ERROR />";
     my $data = $cgi->param('POSTDATA');
     my $asset = $AssetPresentation->deserialize($data);
@@ -108,7 +108,7 @@ sub _delete_asset_handler {
 }
 
 sub _readsession_handler {
-    my ($act, $session_id, $cgi) = @_;
+    my ($this, $cgi, $act, $session_id) = @_;
     my $session_file = $OpenUGAI::Global::DATADIR . "/" . $session_id;
     if ($act eq "start") {
 	if (!open(FILE, ">$session_file")) {

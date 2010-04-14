@@ -2,8 +2,6 @@ package OpenUGAI::RestService;
 
 use CGI;
 use strict;
-use OpenUGAI::Util::Logger;
-use OpenUGAI::Global; # temporary!
 
 sub new {
     my $this = shift;
@@ -12,7 +10,6 @@ sub new {
 	hPOST => undef,
 	hPUT => undef,
 	hDELETE => undef,
-	logger => new OpenUGAI::Util::Logger($OpenUGAI::Global::LOGDIR, "REST"),
     }, $this;
 }
 
@@ -33,16 +30,16 @@ sub run {
     foreach ( keys %$handlers ) {
 	if (my @m = $cgi->path_info =~ $_) {
 	    eval {
-		$handlers->{$_}->(@m, $cgi);
+		$handlers->{$_}->($this, $cgi, @m);
 	    };
 	    if ($@) {
-		$this->{logger}->log("error", $@);
+		Apache2::ServerRec::warn("RestService error: " . $@);
 	    }
 	    return;
 	}
     }
     # not found handler
-    print $cgi->header( -type => 'text/xml', -charset => "utf-8", -status => "404 Not Found $$" ), "";
+    print $cgi->header( -type => 'text/xml', -charset => "utf-8", -status => "404 Not Found" ), "";
 }
 
 1;
