@@ -16,7 +16,7 @@ our $Instance;
 
 sub StartUp {
     my $config = undef; # TODO @@@ : = OpenUGAI::Config::GetConfig();
-    my $file = "/var/www/openugai/perl/trunk/cache_server.list";
+    my $file = "/var/www/openugai/perl/trunk/data/cache_server.list";
     my @memcached_server_list = ();
     open(FILE, $file) || Carp::croak("can not open $file");
     while(<FILE>) {

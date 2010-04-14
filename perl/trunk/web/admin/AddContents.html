@@ -1,0 +1,98 @@
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html;charset=utf-8">
+<title>AddContents</title>
+<script type="text/javascript" src="../js/jquery.js"></script>
+<script type="text/javascript" src="../js/jquery.upload.js"></script>
+<script type="text/javascript" src="../js/mylib.js"></script>
+</head>
+<body>
+
+<form id="frm_info" enctype="multipart/form-data" method="Post" action="http://10.0.1.83:8765/perl/trunk/grid2.cgi/contents/info">
+<div id="div_upload">
+<table>
+
+<tr>
+<td>file 0</td>
+<td>
+<input type="file" name="file_0" size="40" id="input_contents_0" />
+</td>
+</tr>
+
+<tr>
+<td>file 16</td>
+<td>
+<input type="file" name="file_16" size="40" id="input_contents_16" />
+</td>
+</tr>
+
+<tr>
+<td>name</td>
+<td>
+<input type="text" name="name" size="30" id="input_name">
+</td>
+</tr>
+
+<tr>
+<td>description</td>
+<td>
+<textarea name="description" cols="50" row="6" id="input_desc">
+</textarea>
+</td>
+</tr>
+
+<tr>
+<td>related URL</td>
+<td>
+<input type="text" name="related_url" size="50" id="input_url">
+</td>
+</tr>
+
+</table>
+</div>
+
+<input type="submit" value="Add Contents">
+
+</form>
+
+<script type="text/javascript">
+// not used
+var gURL = "http://10.0.1.83:8765/perl/trunk/grid2.cgi";
+var gContentsUUID = "";
+
+function uploadFile() {
+  gContentsUUID = "";
+  var url = gURL + "/contents/data";
+  $("#div_upload").upload(url,
+    function(res) {
+      alert("res: " + res);
+      if (res.success == "true") { 
+        gContentsUUID = res.UUID;
+        postFormData();
+      }
+     }, 'json'
+    );
+}
+
+function postFormData(){
+  var url = gURL + "/contents/info";
+  $.ajax({
+    type: "POST",
+    contentType: "text/plain",
+    url: url,
+    data: $("#frm_info").serialize() + "&UUID=" + gContentsUUID,
+    dataType: 'json',
+    success: function(data) {
+	alert("res:" + data.success);
+    }
+  });
+}
+
+</script>
+
+<script type="text/javascript">
+
+</script>
+
+</body>
+</html>

@@ -3,8 +3,10 @@ use OpenUGAI::Util;
 use OpenUGAI::LoginServer;
 use OpenUGAI::UserServer;
 use OpenUGAI::GridServer;
+use OpenUGAI::GridServer2;
 use OpenUGAI::AssetServer;
 use OpenUGAI::InventoryServer;
+use OpenUGAI::AvatarSelectorServer;
 require "config.pl";
 
 use LWP::Protocol::http;
@@ -33,6 +35,14 @@ $OpenUGAI::Global::RUNNING_MODE = "mod_perl";
 # asset server
 {
     &OpenUGAI::AssetServer::StartUp();
+}
+# avatarselector server
+{
+    &OpenUGAI::AvatarSelectorServer::StartUp();
+}
+# grid2 server
+{
+    &OpenUGAI::GridServer2::StartUp();
 }
 
 &OpenUGAI::Util::Log("startup", "OpenUGAI init", "OpenUGAI started ...");
